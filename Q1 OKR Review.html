@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Global Marketing Team · Q1 2026 OKR Review</title>
+<script src="https://cdn.jsdelivr.net/npm/ogl/dist/ogl.umd.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#06090f;color:#dce3f0;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  /* Noise texture overlay */
+  body::before{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity:0.4;mix-blend-mode:overlay}
+
+  /* Dot grid background */
+  body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:radial-gradient(circle,rgba(74,144,217,0.04) 1px,transparent 1px);
+    background-size:40px 40px}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(74,144,217,0.15);border-radius:2px}
+  .prism-container{position:relative;width:100%;height:100%}
+
+  /* Editable */
+  [contenteditable]{outline:none;cursor:text;border-radius:3px;transition:background 0.2s,box-shadow 0.2s}
+  [contenteditable]:hover{background:rgba(74,144,217,0.05)}
+  [contenteditable]:focus{background:rgba(74,144,217,0.08);box-shadow:inset 0 0 0 1px rgba(74,144,217,0.25)}
+
+  /* ═══ All animations: compositor-only (transform + opacity) ═══ */
+
+  /* Section reveal */
+  .sec-anim{opacity:0;transform:translateY(36px);will-change:transform,opacity}
+  section.vis .sec-anim{animation:revealUp 0.9s cubic-bezier(0.16,1,0.3,1) both}
+  section.vis .sec-anim.d1{animation-delay:.06s}section.vis .sec-anim.d2{animation-delay:.12s}
+  section.vis .sec-anim.d3{animation-delay:.18s}section.vis .sec-anim.d4{animation-delay:.24s}
+  section.vis .sec-anim.d5{animation-delay:.3s}section.vis .sec-anim.d6{animation-delay:.36s}
+  section.vis .sec-anim.d7{animation-delay:.42s}section.vis .sec-anim.d8{animation-delay:.48s}
+
+  @keyframes revealUp{
+    0%{opacity:0;transform:translateY(36px)}
+    70%{opacity:1;transform:translateY(-3px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+
+  /* KR card reveal */
+  .kr-card{opacity:0;transform:translateY(20px);will-change:transform,opacity}
+  section.vis .kr-card{animation:cardIn 0.7s cubic-bezier(0.16,1,0.3,1) both}
+  section.vis .kr-card:nth-child(1){animation-delay:.15s}
+  section.vis .kr-card:nth-child(2){animation-delay:.25s}
+  section.vis .kr-card:nth-child(3){animation-delay:.35s}
+
+  @keyframes cardIn{
+    0%{opacity:0;transform:translateY(20px)}
+    60%{opacity:1;transform:translateY(-2px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+
+  /* Expanded content */
+  @keyframes expandReveal{
+    0%{opacity:0;transform:translateY(-8px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+  .kr-expanded{animation:expandReveal 0.45s cubic-bezier(0.16,1,0.3,1) both;overflow:hidden}
+
+  /* Metric card pop */
+  @keyframes metricPop{
+    0%{opacity:0;transform:translateY(14px) scale(0.96)}
+    65%{opacity:1;transform:translateY(-2px) scale(1.015)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+
+  /* Shimmer text (title accent) */
+  .shimmer-text{
+    background:linear-gradient(90deg,#dce3f0 0%,#5BA3EC 25%,#dce3f0 50%,#5BA3EC 75%,#dce3f0 100%);
+    background-size:200% 100%;
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:shimmerMove 4s ease-in-out infinite;
+  }
+  @keyframes shimmerMove{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* Glow card hover with shimmer */
+  .glow-card{
+    transition:border-color 0.4s cubic-bezier(0.16,1,0.3,1),box-shadow 0.4s cubic-bezier(0.16,1,0.3,1),transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    will-change:transform,box-shadow;position:relative;overflow:hidden
+  }
+  .glow-card::before{
+    content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+    background:conic-gradient(from 0deg,transparent,rgba(74,144,217,0.06),transparent,rgba(74,144,217,0.04),transparent);
+    opacity:0;transition:opacity 0.5s;pointer-events:none;z-index:0
+  }
+  .glow-card:hover::before{opacity:1;animation:cardShimmer 3s linear infinite}
+  .glow-card:hover{
+    border-color:rgba(74,144,217,0.2)!important;
+    box-shadow:0 0 30px rgba(74,144,217,0.06),0 8px 30px rgba(0,0,0,0.4);
+    transform:translateY(-3px)
+  }
+  .glow-card>*{position:relative;z-index:1}
+  @keyframes cardShimmer{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+  /* Animated gradient border (KPI hero cards) */
+  .kpi-card{
+    position:relative;overflow:hidden
+  }
+  .kpi-card::before{
+    content:'';position:absolute;inset:-1px;border-radius:15px;padding:1px;
+    background:linear-gradient(135deg,rgba(74,144,217,0.3),transparent 40%,transparent 60%,rgba(91,163,236,0.2));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    animation:borderFlow 4s linear infinite;pointer-events:none;z-index:0
+  }
+  .kpi-card>*{position:relative;z-index:1}
+  @keyframes borderFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+  /* Number glow pulse */
+  .num-glow{
+    text-shadow:0 0 20px rgba(91,163,236,0.3),0 0 40px rgba(91,163,236,0.1);
+    animation:numPulse 3s ease-in-out infinite
+  }
+  @keyframes numPulse{0%,100%{text-shadow:0 0 20px rgba(91,163,236,0.3),0 0 40px rgba(91,163,236,0.1)}50%{text-shadow:0 0 30px rgba(91,163,236,0.5),0 0 60px rgba(91,163,236,0.2)}}
+
+  /* Section title gradient text */
+  .title-gradient{
+    background:linear-gradient(135deg,#dce3f0 0%,#8baddb 50%,#dce3f0 100%);
+    background-size:200% 100%;
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:titleShimmer 5s ease-in-out infinite
+  }
+  @keyframes titleShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* Animated underline for section headers */
+  .sec-underline{position:relative;display:inline-block}
+  .sec-underline::after{
+    content:'';position:absolute;bottom:-6px;left:50%;width:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(74,144,217,0.6),rgba(91,163,236,0.4),transparent);
+    transition:width 0.8s cubic-bezier(0.16,1,0.3,1),left 0.8s cubic-bezier(0.16,1,0.3,1)
+  }
+  section.vis .sec-underline::after{width:100px;left:calc(50% - 50px)}
+
+  /* Metric card animated accent bar */
+  .metric-card{position:relative;overflow:hidden}
+  .metric-card::after{
+    content:'';position:absolute;top:0;left:0;width:0;height:2px;
+    background:linear-gradient(90deg,rgba(74,144,217,0.5),rgba(91,163,236,0.3));
+    transition:width 0.5s cubic-bezier(0.16,1,0.3,1)
+  }
+  .metric-card:hover::after{width:100%}
+
+  /* Nav active pill animated border */
+  .nav-pill.active{position:relative;overflow:hidden}
+  .nav-pill.active::before{
+    content:'';position:absolute;bottom:0;left:0;width:100%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(74,144,217,0.5),transparent);
+    animation:navLine 2s ease-in-out infinite
+  }
+  @keyframes navLine{0%,100%{opacity:0.3;transform:scaleX(0.5)}50%{opacity:1;transform:scaleX(1)}}
+
+  /* Gradient separator */
+  .section-sep{height:1px;background:linear-gradient(90deg,transparent,rgba(74,144,217,0.25) 30%,rgba(74,144,217,0.4) 50%,rgba(74,144,217,0.25) 70%,transparent);margin:20px auto;max-width:500px}
+
+  /* Animated underline for section headers */
+  .sec-underline{
+    position:relative;display:inline-block
+  }
+  .sec-underline::after{
+    content:'';position:absolute;bottom:-4px;left:50%;width:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(74,144,217,0.6),transparent);
+    transition:width 0.6s cubic-bezier(0.16,1,0.3,1),left 0.6s cubic-bezier(0.16,1,0.3,1)
+  }
+  section.vis .sec-underline::after{width:80px;left:calc(50% - 40px)}
+
+  /* Nav */
+  .top-nav{
+    position:sticky;top:0;z-index:200;
+    background:rgba(6,9,15,0.75);
+    backdrop-filter:blur(24px) saturate(1.2);
+    -webkit-backdrop-filter:blur(24px) saturate(1.2);
+    border-bottom:1px solid transparent;
+    transition:background 0.4s,border-color 0.4s,box-shadow 0.4s
+  }
+  .top-nav.scrolled{
+    background:rgba(6,9,15,0.95);
+    border-bottom-color:rgba(74,144,217,0.1);
+    box-shadow:0 4px 30px rgba(0,0,0,0.4)
+  }
+
+  /* Nav pill */
+  .nav-pill{
+    padding:7px 14px;border-radius:20px;font-size:12px;
+    text-decoration:none;cursor:pointer;font-family:'Inter',sans-serif;
+    border:1px solid transparent;
+    transition:all 0.3s cubic-bezier(0.16,1,0.3,1)
+  }
+  .nav-pill:hover{background:rgba(74,144,217,0.06)!important}
+  .nav-pill.active{
+    color:#fff;background:rgba(74,144,217,0.15);
+    border-color:rgba(74,144,217,0.3);
+    box-shadow:0 0 16px rgba(74,144,217,0.08);
+    animation:glowPulse 3s ease-in-out infinite
+  }
+  .nav-pill:not(.active){color:rgba(255,255,255,0.35)}
+  @keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(74,144,217,0)}50%{box-shadow:0 0 16px 2px rgba(74,144,217,0.12)}}
+
+  /* Chevron */
+  .chevron{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:8px;
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+    transition:transform 0.4s cubic-bezier(0.16,1,0.3,1),background 0.25s,box-shadow 0.3s;
+    flex-shrink:0
+  }
+  .chevron:hover{background:rgba(74,144,217,0.08);box-shadow:0 0 10px rgba(74,144,217,0.1)}
+  .chevron.open{transform:rotate(180deg)}
+  .chevron svg{width:14px;height:14px;stroke:rgba(255,255,255,0.4);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Hero KPI cards */
+  .kpi-card{
+    padding:18px 22px;border-radius:14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(8px);
+    transition:border-color 0.3s,box-shadow 0.3s,transform 0.3s cubic-bezier(0.16,1,0.3,1)
+  }
+  .kpi-card:hover{
+    border-color:rgba(74,144,217,0.2);
+    box-shadow:0 0 20px rgba(74,144,217,0.1);
+    transform:translateY(-3px)
+  }
+
+  /* Metric card */
+  .metric-card{
+    background:#0e1320;border-radius:10px;padding:16px;
+    transition:border-color 0.35s,box-shadow 0.35s,transform 0.35s cubic-bezier(0.16,1,0.3,1)
+  }
+  .metric-card:hover{
+    border-color:rgba(74,144,217,0.25)!important;
+    box-shadow:0 0 16px rgba(74,144,217,0.06);
+    transform:translateY(-2px)
+  }
+
+  /* Keyframes */
+  @keyframes heroTextIn{0%{opacity:0;transform:translateY(35px) scale(0.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes pulse{0%,100%{opacity:0.3}50%{opacity:0.7}}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes scrollDot{0%{transform:translateY(0);opacity:1}100%{transform:translateY(8px);opacity:0}}
+
+  /* StarBorder animated border */
+  .star-border-container{display:inline-block;position:relative;border-radius:16px;overflow:hidden}
+  .border-gradient-bottom{position:absolute;width:300%;height:50%;opacity:0.7;bottom:-12px;right:-250%;border-radius:50%;animation:star-movement-bottom linear infinite alternate;z-index:0}
+  .border-gradient-top{position:absolute;opacity:0.7;width:300%;height:50%;top:-12px;left:-250%;border-radius:50%;animation:star-movement-top linear infinite alternate;z-index:0}
+  .inner-content{position:relative;border:1px solid rgba(74,144,217,0.15);background:rgba(8,12,20,0.98);color:#dce3f0;font-size:16px;text-align:center;padding:0;border-radius:16px;z-index:1}
+  @keyframes star-movement-bottom{0%{transform:translate(0%,0%);opacity:1}100%{transform:translate(-100%,0%);opacity:0}}
+  @keyframes star-movement-top{0%{transform:translate(0%,0%);opacity:1}100%{transform:translate(100%,0%);opacity:0}}
+
+  /* Login input */
+  .login-input{width:100%;padding:13px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);color:#dce3f0;font-size:14px;outline:none;font-family:'Inter',sans-serif;box-sizing:border-box;transition:border-color 0.3s,box-shadow 0.3s}
+  .login-input:focus{border-color:rgba(74,144,217,0.35);box-shadow:0 0 12px rgba(74,144,217,0.08)}
+  .login-input::placeholder{color:rgba(255,255,255,0.2)}
+  .login-input.error{border-color:rgba(248,113,113,0.4);box-shadow:0 0 12px rgba(248,113,113,0.08)}
+
+  /* Edit mode */
+  .edit-mode-on{outline:2px solid rgba(74,144,217,0.15);outline-offset:-2px}
+  .edit-section{position:relative}
+  .edit-section::before{content:'';position:absolute;inset:-4px;border:1.5px dashed rgba(74,144,217,0.15);border-radius:12px;pointer-events:none;opacity:0;transition:opacity 0.3s}
+  .edit-mode-on .edit-section::before{opacity:1}
+  .edit-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.25s;font-family:'Inter',sans-serif;border:1px solid;letter-spacing:0.02em}
+  .edit-btn-add{border-color:rgba(74,144,217,0.3);background:rgba(74,144,217,0.08);color:#5BA3EC}
+  .edit-btn-add:hover{background:rgba(74,144,217,0.15);border-color:rgba(74,144,217,0.5);transform:translateY(-1px)}
+  .edit-btn-del{border-color:rgba(248,113,113,0.2);background:rgba(248,113,113,0.06);color:#f87171;padding:4px 8px;font-size:10px}
+  .edit-btn-del:hover{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.4)}
+  .edit-form{display:flex;gap:8px;align-items:center;padding:12px 16px;background:rgba(74,144,217,0.04);border:1px dashed rgba(74,144,217,0.2);border-radius:10px;margin:8px 0;animation:fadeUp 0.3s ease both}
+  .edit-form input{padding:8px 12px;border-radius:7;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#dce3f0;font-size:12px;outline:none;font-family:'Inter',sans-serif;transition:border-color 0.2s}
+  .edit-form input:focus{border-color:rgba(74,144,217,0.35)}
+  .edit-form input::placeholder{color:rgba(255,255,255,0.2)}
+  .edit-toolbar{position:sticky;top:52px;z-index:150;background:rgba(74,144,217,0.06);backdrop-filter:blur(12px);border-bottom:1px solid rgba(74,144,217,0.12);padding:10px 40px;display:flex;align-items:center;gap:12px;animation:slideDown 0.3s ease}
+  .edit-badge{padding:4px 12px;border-radius:12;font-size:10px;font-weight:700;background:rgba(74,144,217,0.15);color:#5BA3EC;font-family:'Inter',sans-serif;letter-spacing:0.08em;border:1px solid rgba(74,144,217,0.25)}
+
+  /* Save bar */
+  .save-bar{position:fixed;bottom:28px;right:28px;z-index:300;display:flex;gap:8px}
+  .save-bar button{
+    padding:10px 20px;border-radius:24px;
+    border:1px solid rgba(74,144,217,0.25);background:rgba(12,18,30,0.92);
+    backdrop-filter:blur(16px);color:#dce3f0;font-size:12px;font-weight:600;
+    cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+    font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px
+  }
+  .save-bar button:hover{background:rgba(74,144,217,0.15);border-color:rgba(74,144,217,0.4);transform:translateY(-2px);box-shadow:0 4px 16px rgba(74,144,217,0.1)}
+  .save-bar button.done{border-color:rgba(52,211,153,0.35);color:#34d399}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ═══ Prism (play once then freeze — zero continuous rendering) ═══
+function Prism({height=3.5,baseWidth=5.5,animationType='rotate',glow=1,offset={x:0,y:0},noise=0.5,transparent=true,scale=3.6,hueShift=0,colorFrequency=1,hoverStrength=2,inertia=0.05,bloom=1,timeScale=0.5,playDuration=6}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const c=ref.current;if(!c||typeof ogl==='undefined')return;
+    const{Renderer,Triangle,Program,Mesh}=ogl;
+    const H=Math.max(.001,height),BW=Math.max(.001,baseWidth),BH=BW*.5,G=Math.max(0,glow),N=Math.max(0,noise),ox=offset?.x??0,oy=offset?.y??0;
+    const SAT=transparent?1.5:1,SC=Math.max(.001,scale),HU=hueShift||0,CF=Math.max(0,colorFrequency||1),BL=Math.max(0,bloom||1),TS=Math.max(0,timeScale||1);
+    const dpr=Math.min(1.5,window.devicePixelRatio||1);
+    const r=new Renderer({dpr,alpha:transparent,antialias:false});const gl=r.gl;gl.disable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.BLEND);
+    Object.assign(gl.canvas.style,{position:'absolute',inset:'0',width:'100%',height:'100%',display:'block'});c.appendChild(gl.canvas);
+    const vt=`attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
+    const fg=`precision highp float;uniform vec2 iResolution;uniform float iTime,uHeight,uBaseHalf,uGlow,uNoise,uSaturation,uScale,uHueShift,uColorFreq,uBloom,uCenterShift,uInvBaseHalf,uInvHeight,uMinAxis,uPxScale,uTimeScale;uniform vec2 uOffsetPx;uniform mat3 uRot;uniform int uUseBaseWobble;
+    vec4 t4(vec4 x){vec4 e=exp(2.0*x);return(e-1.0)/(e+1.0);}float rnd(vec2 co){return fract(sin(dot(co,vec2(12.9898,78.233)))*43758.5453);}
+    float sdO(vec3 p){vec3 q=vec3(abs(p.x)*uInvBaseHalf,abs(p.y)*uInvHeight,abs(p.z)*uInvBaseHalf);return(q.x+q.y+q.z-1.0)*uMinAxis*0.577;}
+    float sdP(vec3 p){return max(sdO(p),-p.y);}
+    mat3 hR(float a){float c=cos(a),s=sin(a);mat3 W=mat3(.299,.587,.114,.299,.587,.114,.299,.587,.114);mat3 U=mat3(.701,-.587,-.114,-.299,.413,-.114,-.3,-.588,.886);mat3 V=mat3(.168,-.331,.5,.328,.035,-.5,-.497,.296,.201);return W+U*c+V*s;}
+    void main(){vec2 f=(gl_FragCoord.xy-0.5*iResolution.xy-uOffsetPx)*uPxScale;float z=5.0,d=0.0;vec3 p;vec4 o=vec4(0.0);mat2 w=mat2(1.0);if(uUseBaseWobble==1){float t=iTime*uTimeScale;w=mat2(cos(t),cos(t+33.0),cos(t+11.0),cos(t));}for(int i=0;i<60;i++){p=vec3(f,z);p.xz=p.xz*w;p=uRot*p;vec3 q=p;q.y+=uCenterShift;d=0.1+0.2*abs(sdP(q));z-=d;o+=(sin((p.y+z)*uColorFreq+vec4(0,1,2,3))+1.0)/d;}o=t4(o*o*(uGlow*uBloom)/1e5);vec3 col=o.rgb;col+=(rnd(gl_FragCoord.xy+vec2(iTime))-0.5)*uNoise;col=clamp(col,0.0,1.0);float L=dot(col,vec3(.2126,.7152,.0722));col=clamp(mix(vec3(L),col,uSaturation),0.0,1.0);if(abs(uHueShift)>.0001)col=clamp(hR(uHueShift)*col,0.0,1.0);gl_FragColor=vec4(col,o.a);}`;
+    const geo=new Triangle(gl),iR=new Float32Array(2),oP=new Float32Array(2);
+    const prog=new Program(gl,{vertex:vt,fragment:fg,uniforms:{iResolution:{value:iR},iTime:{value:0},uHeight:{value:H},uBaseHalf:{value:BH},uUseBaseWobble:{value:1},uRot:{value:new Float32Array([1,0,0,0,1,0,0,0,1])},uGlow:{value:G},uOffsetPx:{value:oP},uNoise:{value:N},uSaturation:{value:SAT},uScale:{value:SC},uHueShift:{value:HU},uColorFreq:{value:CF},uBloom:{value:BL},uCenterShift:{value:H*.25},uInvBaseHalf:{value:1/BH},uInvHeight:{value:1/H},uMinAxis:{value:Math.min(BH,H)},uPxScale:{value:1/((gl.drawingBufferHeight||1)*.1*SC)},uTimeScale:{value:TS}}});
+    const mesh=new Mesh(gl,{geometry:geo,program:prog});
+    const resize=()=>{const w=c.clientWidth||1,h=c.clientHeight||1;r.setSize(w,h);iR[0]=gl.drawingBufferWidth;iR[1]=gl.drawingBufferHeight;oP[0]=ox*dpr;oP[1]=oy*dpr;prog.uniforms.uPxScale.value=1/((gl.drawingBufferHeight||1)*.1*SC);};
+    const ro=new ResizeObserver(resize);ro.observe(c);resize();
+    const rB=new Float32Array(9);const sM=(y,p,rl,o)=>{const cy=Math.cos(y),sy=Math.sin(y),cx=Math.cos(p),sx=Math.sin(p),cz=Math.cos(rl),sz=Math.sin(rl);o[0]=cy*cz+sy*sx*sz;o[1]=cx*sz;o[2]=-sy*cz+cy*sx*sz;o[3]=-cy*sz+sy*sx*cz;o[4]=cx*cz;o[5]=sy*sz+cy*sx*cz;o[6]=sy*cx;o[7]=-sx;o[8]=cy*cx;return o;};
+    let raf=0,t0=performance.now(),done=false;
+    const R=Math.random;const wX=.3+R()*.6,wY=.2+R()*.7,wZ=.1+R()*.5,phX=R()*Math.PI*2,phZ=R()*Math.PI*2;
+
+    const draw=t=>{
+      if(done)return;
+      const tm=(t-t0)*.001;
+      prog.uniforms.iTime.value=tm;
+      if(animationType==='3drotate'){const ts=tm*TS;const yaw=ts*wY,pitch=Math.sin(ts*wX+phX)*.6,roll=Math.sin(ts*wZ+phZ)*.5;sM(yaw,pitch,roll,rB);prog.uniforms.uRot.value=rB;}
+      else{rB[0]=1;rB[1]=0;rB[2]=0;rB[3]=0;rB[4]=1;rB[5]=0;rB[6]=0;rB[7]=0;rB[8]=1;prog.uniforms.uRot.value=rB;}
+      r.render({scene:mesh});
+      // Freeze after playDuration — render final frame then stop
+      if(tm<playDuration)raf=requestAnimationFrame(draw);
+      else{done=true;raf=0;}
+    };
+    raf=requestAnimationFrame(draw);
+    ro.observe(c);
+    return()=>{if(raf)cancelAnimationFrame(raf);ro.disconnect();if(gl.canvas.parentElement===c)c.removeChild(gl.canvas);};
+  },[]);
+  return <div className="prism-container" ref={ref}/>;
+}
+
+// ═══ Tokens ═══
+const T={primary:'#dce3f0',accent:'#4A90D9',accentLight:'#5BA3EC',accentSoft:'rgba(74,144,217,0.1)',accentBorder:'rgba(74,144,217,0.22)',bg:'#06090f',bgCard:'#0c121e',bgCardHover:'#101828',bgElevated:'#141c2e',bgMuted:'#080c15',border:'rgba(255,255,255,0.05)',borderLight:'rgba(255,255,255,0.03)',text:'#dce3f0',textBody:'#b8c4d8',textSec:'#6b7a92',textMuted:'#3e4d63',green:'#34d399',greenBg:'rgba(52,211,153,0.08)',greenBorder:'rgba(52,211,153,0.18)',amber:'#fbbf24',amberBg:'rgba(251,191,36,0.06)',amberBorder:'rgba(251,191,36,0.15)',r:{xs:6,sm:8,md:12,lg:16},shadow:{xs:'0 1px 3px rgba(0,0,0,0.4)',sm:'0 2px 8px rgba(0,0,0,0.35)',md:'0 4px 20px rgba(0,0,0,0.45)'},font:{cn:"'Noto Serif SC','PingFang SC',serif",en:"'Inter',-apple-system,sans-serif",mono:"'JetBrains Mono','SF Mono',monospace"}};
+
+// ═══ Ed (editable) ═══
+function Ed({children,tag:Tag='span',style}){return <Tag contentEditable suppressContentEditableWarning style={{...style,display:'inline'}}>{children}</Tag>;}
+
+// ═══ Chevron ═══
+function ChevronIcon({open}){return <span className={`chevron${open?' open':''}`}><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>;}
+
+// ═══ SVG Icons ═══
+const IP={
+  'dollar':<><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
+  'users':<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  'trend':<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+  'chart':<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>,
+  'target':<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+  'key':<><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></>,
+  'star':<><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
+  'heart':<><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></>,
+  'zap':<><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>,
+  'globe':<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
+  'trophy':<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></>,
+  'refresh':<><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></>,
+  'shield':<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+  'link':<><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></>,
+  'phone':<><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></>,
+  'flame':<><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></>,
+  'moon':<><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></>,
+  'hash':<><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></>,
+  'map':<><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></>,
+  'send':<><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+  'users-add':<><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></>,
+};
+
+function Icon({name,size=20,color,glow=false}){
+  const c=color||T.accentLight;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{filter:glow?`drop-shadow(0 0 6px ${c}40)`:'none',flexShrink:0}}>{IP[name]||IP['chart']}</svg>;
+}
+
+// ═══ Save Bar ═══
+function SaveBar(){
+  const[s,setS]=useState('idle');
+  const save=()=>{localStorage.setItem('okr-save',document.documentElement.outerHTML);setS('saved');setTimeout(()=>setS('idle'),2000);};
+  const dl=()=>{const b=new Blob([document.documentElement.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Q1 OKR Review.html';a.click();URL.revokeObjectURL(a.href);setS('dl');setTimeout(()=>setS('idle'),2000);};
+  return <div className="save-bar"><button onClick={save} className={s==='saved'?'done':''}>{s==='saved'?'✓ Saved':'💾 Save'}</button><button onClick={dl} className={s==='dl'?'done':''}>{s==='dl'?'✓ Downloaded':'⬇ Download'}</button></div>;
+}
+
+// ═══ Data (verified from image — 3 Objectives, 9 KRs, all owners, correct numbers) ═══
+function getInitialData(){return{
+  title:'全球营销团队 Q1 OKR 复盘',titleEn:'Global Marketing Team · Q1 OKR Review',
+  subtitle:'2026 年度第一季度回顾与策略复盘',subtitleEn:'2026 First Quarter Review & Strategy Recap',
+  date:'2026.04.14',nextReview:'2026.07.10',
+  statusLegend:[
+    {color:'#34d399',label:'On Track',desc:'进度符合计划'},
+    {color:'#fbbf24',label:'At Risk',desc:'进度滞后，已有缓解方案'},
+    {color:'#f87171',label:'Off Track',desc:'进度停滞或关键里程碑未达'},
+    {color:'#6b7a92',label:'Not Started',desc:'尚未启动'},
+  ],
+  summaryMetrics:[
+    {label:'总用户触达',labelEn:'Total User Reach',value:'2.2M',sub:'年度目标 8M',subEn:'Annual Goal 8M',icon:'users'},
+    {label:'品牌知名度增长',labelEn:'Brand Awareness Growth',value:'+14.5%',sub:'同比',subEn:'YoY',icon:'trend',good:true},
+    {label:'关键区域市场份额',labelEn:'Key Region Market Share',value:'6.5%',sub:'平均',subEn:'Average',icon:'chart'},
+    {label:'总体评审状态',labelEn:'Overall Status',value:'On Track',icon:'check',good:true},
+  ],
+  headlineMetrics:[
+    {label:'Q1 用户触达',labelEn:'Q1 User Reach',value:'2.2M',sub:'年度目标 8M',subEn:'Annual 8M',icon:'users'},
+    {label:'品牌知名度',labelEn:'Brand Awareness',value:'+14.5%',sub:'同比',subEn:'YoY',icon:'trend',good:true},
+    {label:'区域市场份额',labelEn:'Regional Share',value:'6.5%',sub:'平均',subEn:'Avg',icon:'chart'},
+    {label:'CPA 降幅',labelEn:'CPA Reduction',value:'-6.2%',sub:'超目标 -5%',subEn:'Target -5%',icon:'dollar',good:true},
+    {label:'新增 KOL',labelEn:'New KOLs',value:'12',sub:'目标 10',subEn:'Target 10',icon:'star',good:true},
+    {label:'合规审计',labelEn:'Compliance Audit',value:'0',sub:'重大发现',subEn:'Major Findings',icon:'shield',good:true},
+  ],
+  objectives:[
+    // ═══ O1: Brand Building ═══
+    {id:'o1',status:'At Risk',statusEn:'At Risk',statusColor:T.amber,
+      title:'提升 Vantage 全球影响力与品牌一致性',titleEn:'Build Vantage into a Global Top-Tier Brand',
+      subtitle:'品牌视觉 · KOL 网络 · 品牌生态',subtitleEn:'Brand Visual · KOL Network · Brand Ecosystem',
+      krs:[
+        {id:'kr1.1',code:'KR 1.1',
+          title:'打造全球统一的品牌视觉与叙事，提升核心市场品牌意识',titleEn:'Build Global Brand Awareness & Preference (Focus on Tier 1 Markets)',
+          tags:['Brand & Creative','VIS v2.0','UK','AU','DE'],
+          summary:'VIS v2.0 完成 80%，「Next Level Trading」活动延迟 2 周上线，Q1 触达 512K（目标 600K）',summaryEn:'VIS v2.0 80% done, "Next Level Trading" launched 2 weeks late, Q1 reach 512K (target 600K)',
+          result:'全球品牌标识系统（VIS）v2.0 已完成并推广至 80% 区域团队。「Next Level Trading」品牌活动在英国/澳洲上线（延迟 2 周）。Q1 实际触达 512,430 月活用户（目标 600K，达成率 85.4%）。英国品牌知名度调查 18%（目标 20%）。',
+          resultEn:'Global Brand Identity System (VIS) v2.0 complete and rolled out to 80% of regional teams. "Next Level Trading" campaign launched in UK/AU (2 weeks behind schedule). Actual Q1 reach: 512,430 MAU (85.4% of 600K target). UK brand awareness survey: 18% (target 20%).',
+          annual:['全球月活用户达 300 万','核心 Tier 1 市场（UK/AU/DE）品牌知名度达 25%','品牌偏好/考虑度提升 15%'],annualEn:['Reach 3M monthly active users globally','Brand awareness in Tier 1 markets (UK/AU/DE) to reach 25%','Brand preference/consideration +15%'],
+          metrics:[{label:'Q1 触达（实际）',labelEn:'Q1 Reach (Actual)',value:'512,430',sub:'目标 600K',subEn:'Target 600K',icon:'users'},{label:'达成率',labelEn:'Achievement',value:'85.4%',icon:'chart'},{label:'UK 品牌知名度',labelEn:'UK Awareness',value:'18%',target:'20%',icon:'trend'},{label:'VIS v2.0 推广',labelEn:'VIS v2.0 Rollout',value:'80%',icon:'shield'}],
+          status:'🟡',owner:'Jeff / Brand Team',
+          improvement:'UK 法律审批瓶颈导致活动延迟。德国市场素材需更多本地化。社交媒体互动率低于基准（实际 1.2% vs 目标 2.5%）。',improvementEn:'Campaign launch delay due to legal approval bottlenecks in UK. German market assets require more localization. Social media engagement rate lower than benchmark (1.2% actual vs 2.5% target).'},
+        {id:'kr1.2',code:'KR 1.2',
+          title:'提升全球社交媒体与 KOL 领域的行业领导地位',titleEn:'Establish Global Thought Leadership & KOL Network',
+          tags:['Social Media','PR','KOL','Webinar','TikTok'],
+          summary:'粉丝 +168.5K（超目标 112%），12 个 KOL 签约，TikTok 东南亚 +40% MoM',summaryEn:'Followers +168.5K (112% of target), 12 KOLs onboarded, TikTok SEA +40% MoM',
+          result:'全球社交媒体粉丝增长 168,500（目标 150K，达成 112%）。12 个 Tier-1 KOL 新签约（聚焦拉美和东南亚）。2 场全球网络研讨会完成，总参与 4,500+。TikTok 东南亚频道环比增长 40%。',
+          resultEn:'Total followers increased by 168,500 (112% of 150K target). 12 new Tier-1 KOLs onboarded (Focus: LATAM and SEA). 2 global webinars completed; total attendance 4,500+. TikTok SEA channel saw 40% MoM growth.',
+          annual:['全球粉丝达 150 万','签约 50+ 顶级金融 KOL','全平台平均互动率 3.5%'],annualEn:['Global social following to reach 1.5M','Establish partnerships with 50+ top-tier financial KOLs','Average engagement rate 3.5% across platforms'],
+          metrics:[{label:'粉丝增长（实际）',labelEn:'Follower Growth',value:'168,500',sub:'目标 150K',subEn:'Target 150K',good:true,icon:'users',accent:true},{label:'达成率',labelEn:'Achievement',value:'112%',good:true,icon:'chart'},{label:'新 KOL 签约',labelEn:'New KOLs',value:'12',sub:'目标 10',subEn:'Target 10',good:true,icon:'star'},{label:'研讨会参与',labelEn:'Webinar Attendance',value:'4,500+',good:true,icon:'globe'},{label:'TikTok SEA 增长',labelEn:'TikTok SEA',value:'+40% MoM',good:true,icon:'trend'}],
+          status:'🟢',owner:'Sarah / Social Team',
+          improvement:'Twitter（X）在西方市场表现停滞，需新内容策略。LinkedIn 专业内容在获客方面表现好但需更高频率。',improvementEn:'Twitter (X) performance plateauing in Western markets; need new content strategy. LinkedIn professional content performing well for lead gen but needs higher frequency.'},
+        {id:'kr1.3',code:'KR 1.3',
+          title:'建立全面的品牌生态系统',titleEn:'Build a Comprehensive Brand Ecosystem',
+          tags:['Vantage Rewards','McLaren','Fintech','Partnerships'],
+          summary:'Rewards 技术蓝图 100% 完成，McLaren 续约，3/5 金融科技合作签约',summaryEn:'Rewards blueprint 100% complete, McLaren extended, 3/5 fintech partnerships signed',
+          result:'「Vantage Rewards」忠诚度计划技术蓝图 100% 完成，Beta 测试定于 Q2。McLaren 合作续约并获得额外激活资源。3/5 金融科技合作签约（TradingView、MetaTrader 更新、东南亚本地钱包）。',
+          resultEn:'"Vantage Rewards" loyalty program technical blueprint 100% complete; Beta testing scheduled for Q2. McLaren partnership extended with additional activation slots secured. 3 out of 5 fintech partnerships signed (TradingView, MetaTrader updates, SEA local wallet).',
+          annual:['全球推出「Vantage Rewards」忠诚度计划','赞助 2 场全球体育赛事','品牌生态收入贡献达 15%'],annualEn:['Launch "Vantage Rewards" loyalty program globally','Sponsorship of 2 major global sporting events','Brand ecosystem revenue contribution to reach 15%'],
+          metrics:[{label:'Rewards 蓝图',labelEn:'Rewards Blueprint',value:'100%',good:true,icon:'check',accent:true},{label:'McLaren 续约',labelEn:'McLaren Extended',value:'完成',valueEn:'Done',good:true,icon:'zap'},{label:'金融科技合作',labelEn:'Fintech Partners',value:'3/5',icon:'link'}],
+          status:'🟢',owner:'Mike / Partnerships',
+          improvement:'新兴市场（拉美/非洲）需要更多本地化奖励。移动端奖励追踪集成落后于桌面版。',improvementEn:'Need more localized rewards for emerging markets (LATAM/Africa). Mobile app rewards tracking integration behind desktop version.'},
+      ]},
+    // ═══ O2: Growth & Efficiency (4 KRs) ═══
+    {id:'o2',status:'On Track',statusEn:'On Track',statusColor:T.green,
+      title:'注重增长质量，通过精细化运营提升全渠道获客效率',titleEn:'Drive Growth Quality — Precision Operations for Full-Funnel Acquisition Efficiency',
+      subtitle:'Ads 精细化 · 曝光基建 · 数据基础 · 用户运营',subtitleEn:'Ads Precision · Visibility Infrastructure · Data Foundation · User Operations',
+      krs:[
+        {id:'kr2.1',code:'KR 2.1',
+          title:'加强 Ads 的数据化、精细化管理，提高广告投放效果',titleEn:'Strengthen Data-Driven and Granular Ads Management to Improve Ad Performance',
+          tags:['预算监控','ROI 监控','LTV/CAC','Campaign CAC','落地页转化'],
+          summary:'5 大 Subject 全面推进：预算监控、重点国家 ROI、渠道 LTV/CAC、素材级 CAC、Web 落地页转化率',summaryEn:'5 Subjects advanced: budget monitoring, regional ROI, channel LTV/CAC, creative-level CAC, web landing page CR',
+          result:'广告投放数据化管理体系建立。预算实时监控系统上线。重点国家（SEA/MENA/LATAM）ROI 监控看板完成。按获取渠道的 LTV/CAC 监控体系搭建。Campaign 素材级别 CAC 追踪实现。Web 落地页转化率优化启动。',
+          resultEn:'Data-driven ads management system established. Real-time budget monitoring live. Regional ROI dashboards (SEA/MENA/LATAM) completed. Channel-level LTV/CAC monitoring built. Creative-level CAC tracking implemented. Web landing page conversion optimization launched.',
+          annual:['预算监控覆盖率 100%','重点国家 ROI 看板实时化','渠道 LTV/CAC 建模','素材级 CAC 归因','Web 落地页转化率提升 15%'],annualEn:['100% budget monitoring coverage','Real-time regional ROI dashboards','Channel LTV/CAC modeling','Creative-level CAC attribution','Web landing page CR +15%'],
+          metrics:[{label:'预算监控',labelEn:'Budget Monitoring',value:'已上线',valueEn:'Live',good:true,icon:'dollar',accent:true},{label:'ROI 看板',labelEn:'ROI Dashboard',value:'已完成',valueEn:'Done',good:true,icon:'chart'},{label:'素材级 CAC',labelEn:'Creative CAC',value:'已实现',valueEn:'Implemented',good:true,icon:'search'},{label:'落地页转化优化',labelEn:'Landing Page CR',value:'启动中',valueEn:'In Progress',icon:'trend'}],
+          owner:'Growth / Performance Team',
+          improvement:'部分渠道的 LTV 数据回传延迟，影响实时决策。落地页 A/B 测试基础设施需完善。',improvementEn:'LTV data feed delays in some channels affecting real-time decisions. Landing page A/B testing infrastructure needs improvement.'},
+        {id:'kr2.2',code:'KR 2.2',
+          title:'加强「曝光基建」，通过 SEO、ASO、GEO 全面提高自然曝光能力',titleEn:'Strengthen Visibility Infrastructure via SEO, ASO, GEO to Improve Organic Exposure',
+          tags:['SEO','ASO','GEO','品牌声誉','评分评论'],
+          summary:'4 大 Subject：SEO 基础加强、ASO 评分评论体系、GEO 高频搜索内容、品牌声誉强化',summaryEn:'4 Subjects: SEO foundation, ASO rating/review system, GEO high-frequency search content, brand reputation',
+          result:'SEO 基础架构审计完成并启动优化。ASO 评分和评论体系建立，App Store 评分提升至 4.3。GEO 高频搜索内容策略制定并开始产出。品牌声誉监控和强化计划启动。',
+          resultEn:'SEO infrastructure audit completed and optimization launched. ASO rating and review system established; App Store rating improved to 4.3. GEO high-frequency search content strategy defined and production started. Brand reputation monitoring and enhancement plan initiated.',
+          annual:['SEO 基础架构全面升级','ASO 评分 >4.5','GEO 内容覆盖 Top 100 高频搜索','品牌声誉正向提及 +30%'],annualEn:['Full SEO infrastructure upgrade','ASO rating >4.5','GEO content covering Top 100 high-frequency searches','Positive brand mentions +30%'],
+          metrics:[{label:'SEO 审计',labelEn:'SEO Audit',value:'已完成',valueEn:'Done',good:true,icon:'search',accent:true},{label:'App Store 评分',labelEn:'App Store Rating',value:'4.3',target:'>4.5',icon:'star'},{label:'GEO 内容产出',labelEn:'GEO Content',value:'启动中',valueEn:'In Progress',icon:'globe'},{label:'品牌声誉监控',labelEn:'Brand Reputation',value:'已启动',valueEn:'Initiated',good:true,icon:'shield'}],
+          owner:'SEO / ASO / Content Team',
+          improvement:'GEO 内容产出速度需加快。ASO 评论体系在部分市场用户参与度低。',improvementEn:'GEO content production speed needs to accelerate. ASO review system has low user participation in some markets.'},
+        {id:'kr2.3',code:'KR 2.3',
+          title:'加强整体数据基础设施建设，尤其是外部和第三方数据系统',titleEn:'Strengthen Overall Data Infrastructure, Especially External and Third-Party Data Systems',
+          tags:['市场数据','数据基础设施','第三方系统','数据集成'],
+          summary:'市场数据 Subject：外部数据源接入、第三方数据系统整合、数据质量提升',summaryEn:'Market Data Subject: external data source integration, third-party system consolidation, data quality improvement',
+          result:'外部市场数据源接入方案确定并启动实施。第三方数据系统整合路线图制定。数据质量评估框架建立。',
+          resultEn:'External market data source integration plan defined and implementation started. Third-party data system consolidation roadmap created. Data quality assessment framework established.',
+          annual:['接入 3+ 外部市场数据源','第三方数据系统 100% 整合','数据质量评分 >90%'],annualEn:['Integrate 3+ external market data sources','100% third-party data system consolidation','Data quality score >90%'],
+          metrics:[{label:'外部数据源',labelEn:'External Sources',value:'方案确定',valueEn:'Plan Defined',icon:'link',accent:true},{label:'系统整合路线图',labelEn:'Integration Roadmap',value:'已完成',valueEn:'Done',good:true,icon:'chart'},{label:'数据质量框架',labelEn:'Data Quality Framework',value:'已建立',valueEn:'Established',good:true,icon:'shield'}],
+          owner:'Data / Tech Team',
+          improvement:'部分第三方 API 接口文档不完整，影响集成进度。数据标准化工作量比预期大。',improvementEn:'Some third-party API documentation incomplete, affecting integration progress. Data standardization effort larger than expected.'},
+        {id:'kr2.4',code:'KR 2.4',
+          title:'加强系统化用户运营能力，全面提升用户转化与 LTV',titleEn:'Strengthen Systematic User Operations to Comprehensively Improve User Conversion & LTV',
+          tags:['新用户转化','用户触点','生命周期','活动系统','Mega 活动','长期增长'],
+          summary:'6 大 Subject 全面推进：新用户转化、用户触点系统、生命周期运营、活动系统、Mega 活动、长期增长系统',summaryEn:'6 Subjects: new user conversion, touchpoint system, lifecycle ops, event system, mega events, long-term growth',
+          result:'新用户转化流程优化启动。用户触点系统（全渠道触达）架构设计完成。用户生命周期运营模型搭建。高效活动系统开发中。Q1 Mega 活动策划完成。长期增长系统框架定义。',
+          resultEn:'New user conversion flow optimization initiated. User touchpoint system (omnichannel reach) architecture completed. User lifecycle operations model built. Efficient event system in development. Q1 Mega event planning completed. Long-term growth system framework defined.',
+          annual:['新用户首存转化率提升 20%','全渠道触点系统上线','用户生命周期模型覆盖 100%','Mega 活动年举办 4+ 场','长期增长系统 MVP 上线'],annualEn:['New user first deposit CR +20%','Omnichannel touchpoint system live','100% user lifecycle model coverage','4+ Mega events per year','Long-term growth system MVP live'],
+          metrics:[{label:'新用户转化优化',labelEn:'New User Conversion',value:'启动中',valueEn:'In Progress',icon:'users',accent:true},{label:'触点系统架构',labelEn:'Touchpoint Architecture',value:'已完成',valueEn:'Done',good:true,icon:'link'},{label:'生命周期模型',labelEn:'Lifecycle Model',value:'搭建中',valueEn:'Building',icon:'refresh'},{label:'Mega 活动策划',labelEn:'Mega Event Plan',value:'已完成',valueEn:'Done',good:true,icon:'target'}],
+          owner:'CRM / User Operations Team',
+          improvement:'用户触点系统与现有 CRM 的集成复杂度高。Mega 活动的跨区域协调需要更清晰的 SOP。',improvementEn:'User touchpoint system integration with existing CRM is complex. Mega event cross-regional coordination needs clearer SOP.'},
+      ]},
+    // ═══ O3: Regional Breakthroughs ═══
+    {id:'o3',status:'At Risk',statusEn:'At Risk',statusColor:T.amber,
+      title:'在关键区域实现破局与增长，确立市场领导地位',titleEn:'Achieve Real Breakthroughs in Key Regions; Establish Industry Leader Position',
+      subtitle:'东南亚/拉美市场份额 · 合规与本地化',subtitleEn:'SEA/LATAM Market Share · Compliance & Localization',
+      krs:[
+        {id:'kr3.1',code:'KR 3.1',
+          title:'在核心市场（SEA/LATAM）实现显著的市场份额增长',titleEn:'Significantly Increase Market Share in SEA/LATAM',
+          tags:['Vietnam','Thailand','Brazil','Mexico','NPS'],
+          summary:'越南份额 +2.4%，墨西哥活动首月 15K 注册，LATAM 入金 +25% QoQ',summaryEn:'Vietnam share +2.4%, Mexico campaign 15K registrations month 1, LATAM deposits +25% QoQ',
+          result:'越南市场份额增长 2.4%。墨西哥「Trading para Todos」活动按时上线，首月 15,000 新注册。东南亚客户满意度 92%（目标 >90%）。拉美入金量环比增长 25%。',
+          resultEn:'Vietnam market share increased by 2.4%. Mexico "Trading para Todos" campaign launched on time; 15,000 new registrations in month 1. SEA customer support satisfaction at 92% (target >90%). LATAM deposit volume grew by 25% QoQ.',
+          annual:['越南和泰国市场份额达 #1','巴西和墨西哥成为 Top 3 经纪商','区域平均 NPS 达 60+'],annualEn:['Achieve #1 market share in Vietnam and Thailand','Establish Vantage as Top 3 broker in Brazil and Mexico','Average regional NPS of 60+'],
+          metrics:[{label:'越南份额增长',labelEn:'Vietnam Share',value:'+2.4%',good:true,icon:'chart',accent:true},{label:'墨西哥新注册',labelEn:'Mexico Registrations',value:'15,000',sub:'首月',subEn:'Month 1',good:true,icon:'users'},{label:'东南亚满意度',labelEn:'SEA Satisfaction',value:'92%',target:'>90%',good:true,icon:'heart'},{label:'拉美入金增长',labelEn:'LATAM Deposits',value:'+25% QoQ',good:true,icon:'trend'}],
+          status:'🟢',owner:'Lin / Carlos (Regional Leads)',
+          improvement:'巴西本地支付网关集成缓慢导致用户流失。墨西哥需要更多西班牙语客户经理处理线索量。',improvementEn:'Local payment gateway integration in Brazil is slow, causing drop-offs. Need more Spanish-speaking account managers to handle lead volume in Mexico.'},
+        {id:'kr3.2',code:'KR 3.2',
+          title:'强化合规与本地化，支撑业务全球化扩张',titleEn:'Strengthen Compliance and Localization to Support Global Expansion',
+          tags:['Compliance','Localization','License','Arabic','Japanese','RTL'],
+          summary:'日语本地化 100% 完成，阿拉伯语因 RTL 问题延迟至 Q2，合规审计 0 重大发现',summaryEn:'Japanese localization 100% done, Arabic delayed to Q2 (RTL issues), compliance audit 0 major findings',
+          result:'新 Tier-1 牌照申请已提交（状态：审核中）。日语 UI/UX 本地化 100% 完成。阿拉伯语本地化因复杂 RTL（从右到左）格式问题延迟至 Q2。合规审计结果：0 重大发现，2 个 minor advisory（已解决）。',
+          resultEn:'New Tier-1 license application submitted (Status: Pending). Japanese UI/UX localization 100% complete. Arabic localization delayed to Q2 due to complex RTL (Right-to-Left) formatting issues. Compliance audit: 0 major findings, 2 minor advisories (resolved).',
+          annual:['获取 2 个新 Tier-1 监管牌照','所有活跃市场 100% 合规','Top 15 市场完成全面本地化（产品+内容）'],annualEn:['Obtain 2 new major Tier-1 regulatory licenses','100% compliance with local marketing regulations across all active markets','Full localization for top 15 markets'],
+          metrics:[{label:'牌照申请',labelEn:'License Application',value:'已提交',valueEn:'Submitted',icon:'shield',accent:true},{label:'日语本地化',labelEn:'Japanese L10n',value:'100%',good:true,icon:'check'},{label:'阿拉伯语本地化',labelEn:'Arabic L10n',value:'延迟至 Q2',valueEn:'Delayed to Q2',icon:'globe'},{label:'合规审计',labelEn:'Compliance Audit',value:'0 重大发现',valueEn:'0 Major Findings',good:true,icon:'shield'}],
+          status:'🟡',owner:'Anna / Ops',
+          improvement:'App 框架中 RTL 技术支持比预估更复杂。需要招聘专业 RTL QA 测试人员。',improvementEn:'RTL technical support within the app framework is more complex than estimated. Need to hire specialized RTL QA testers.'},
+      ]},
+  ],
+  strategy:{
+    title:'2026 全球增长战略策略图',titleEn:'2026 Global Growth Strategy Map',
+    core:'2026 Q1 增长与品牌战略',coreEn:'2026 Q1 Growth & Brand Strategy',
+    pillars:[
+      {title:'品牌建设',titleEn:'Brand Building',items:['统一全球标识（VIS v2.0 推广）','高影响力活动（UK/AU 启动→全球扩展）','思想领导力（KOL 计划 & 全球研讨会）','社区参与（Vantage Rewards 上线）'],itemsEn:['Unified Global Identity (VIS v2.0 rollout)','High-Impact Campaigns (UK/AU Launch → Global)','Thought Leadership (KOL program & Webinars)','Community Engagement (Vantage Rewards)'],color:'#4A90D9',icon:'shield'},
+      {title:'增长与效率',titleEn:'Performance & Efficiency',items:['AI 驱动增长（Google/Meta AI 出价）','数据基础设施（归因模型 v3.0，CRM 集成）','自然流量主导（SEO 内容中心，ASO 优化）','漏斗优化（注册到入金转化提升）'],itemsEn:['AI-Driven Growth (AI bidding in Google/Meta)','Data Infrastructure (Attribution v3.0, CRM)','Organic Dominance (SEO hubs, ASO optimization)','Funnel Optimization (Reg-to-deposit conversion)'],color:'#34d399',icon:'trend'},
+      {title:'区域破局',titleEn:'Regional Breakthrough',items:['规模化本地化（内容/支付/客服本地化）','东南亚领导地位（巩固 VN/TH 市场份额）','拉美扩张（墨西哥成功扩展至巴西/哥伦比亚）','监管合规（获取新 Tier-1 牌照）'],itemsEn:['Localization at Scale (Content, payment, support)','SEA Leadership (Consolidate VN/TH market share)','LATAM Expansion (Scale Mexico to Brazil/Colombia)','Regulatory Compliance (Secure new Tier-1 licenses)'],color:'#fbbf24',icon:'map'},
+    ],
+    execution:[],
+  },
+  areas:{title:'Q2 重点改进方向',titleEn:'Q2 Key Improvement Areas',items:[
+    {cn:'UK 法律审批流程优化，避免品牌活动延迟',en:'Optimize UK legal approval process to avoid brand campaign delays'},
+    {cn:'德国市场素材深度本地化',en:'Deep localization of assets for German market'},
+    {cn:'社交媒体互动率提升至 2.5%（当前 1.2%）',en:'Improve social media engagement rate to 2.5% (currently 1.2%)'},
+    {cn:'Twitter（X）西方市场新内容策略制定',en:'Develop new content strategy for Twitter (X) in Western markets'},
+    {cn:'Google 算法更新后内容审计与恢复',en:'Content audit and recovery plan post-Google algorithm update'},
+    {cn:'移动端网页到 App 旅程流失修复',en:'Fix mobile web-to-app journey leakage'},
+    {cn:'巴西支付网关集成加速',en:'Accelerate Brazil payment gateway integration'},
+    {cn:'阿拉伯语 RTL 技术方案落地 + QA 招聘',en:'Implement Arabic RTL technical solution + hire QA testers'},
+    {cn:'新兴市场本地化奖励方案设计',en:'Design localized rewards for emerging markets'},
+  ]},
+  nextReviewDate:'2026.07.10',
+};}
+
+// ═══ Hero ═══
+function HeroSection(){
+  return(
+    <section id="hero" style={{position:'relative',height:'100vh',overflow:'hidden',background:'#06090f'}}>
+      <div style={{position:'absolute',inset:0}}><Prism animationType="rotate" timeScale={0.5} height={4} baseWidth={5.5} scale={3.6} hueShift={-0.3416} colorFrequency={0.65} noise={0} glow={0.5} bloom={1} transparent playDuration={8}/></div>
+      <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,background:'linear-gradient(180deg,rgba(6,9,15,0.05) 0%,rgba(6,9,15,0.15) 50%,rgba(6,9,15,0.55) 100%)'}}>
+        <div style={{animation:'heroTextIn 1.2s cubic-bezier(0.16,1,0.3,1) 0.4s both',textAlign:'center'}}>
+          <div className="shimmer-text" style={{fontSize:60,fontWeight:800,letterSpacing:'0.1em',fontFamily:T.font.en,marginBottom:10}}>VANTAGE</div>
+          <div style={{width:260,height:1,background:'linear-gradient(90deg,transparent,rgba(74,144,217,0.5),transparent)',margin:'0 auto 24px'}}/>
+          <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.6)',letterSpacing:'0.3em',fontFamily:T.font.en,marginBottom:6}}>Q1 2026 OKR REVIEW</div>
+          <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',fontFamily:T.font.en,letterSpacing:'0.08em'}}>GLOBAL MARKETING TEAM</div>
+        </div>
+        <div style={{animation:'heroTextIn 1.2s cubic-bezier(0.16,1,0.3,1) 1s both',display:'flex',gap:20,marginTop:56}}>
+          {['$2.21M','140.4K','4.2%','3.2×'].map((v,i)=>(
+            <div key={i} className="kpi-card" style={{textAlign:'center',minWidth:130}}>
+              <div className="num-glow" style={{fontSize:36,fontWeight:700,fontFamily:T.font.mono,color:'rgba(91,163,236,0.95)'}}>{v}</div>
+              <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',fontFamily:T.font.en,marginTop:8,letterSpacing:'0.12em'}}>{['AD SPEND','NEW USERS','ENGAGEMENT','LTV/CAC'][i]}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{position:'absolute',bottom:50,animation:'fadeIn 1s ease 2s both',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+          <div style={{fontSize:10,color:'rgba(255,255,255,0.18)',fontFamily:T.font.en,letterSpacing:'0.2em'}}>SCROLL</div>
+          <div style={{width:18,height:28,borderRadius:9,border:'1.5px solid rgba(255,255,255,0.15)',display:'flex',justifyContent:'center',paddingTop:5}}>
+            <div style={{width:2.5,height:5,borderRadius:2,background:'rgba(74,144,217,0.5)',animation:'scrollDot 1.8s ease-in-out infinite'}}/>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══ Nav ═══
+function TopNav({active}){
+  const navRef=useRef(null);
+  useEffect(()=>{
+    const nav=navRef.current;if(!nav)return;let ticking=false;
+    const fn=()=>{if(!ticking){requestAnimationFrame(()=>{nav.classList.toggle('scrolled',window.scrollY>window.innerHeight*.7);ticking=false;});ticking=true;}};
+    window.addEventListener('scroll',fn,{passive:true});return()=>window.removeEventListener('scroll',fn);
+  },[]);
+  const items=[{id:'o1',label:'O1',full:'品牌'},{id:'o2',label:'O2',full:'增长'},{id:'o3',label:'O3',full:'突破'},{id:'strategy',label:'战略',full:''},{id:'areas',label:'Q2',full:'改进'}];
+  return(
+    <nav ref={navRef} className="top-nav">
+      <div style={{maxWidth:1100,margin:'0 auto',padding:'0 40px',display:'flex',alignItems:'center',height:52,justifyContent:'space-between'}}>
+        <a href="#hero" onClick={e=>{e.preventDefault();document.getElementById('hero')?.scrollIntoView({behavior:'smooth'});}} style={{textDecoration:'none',cursor:'pointer'}}>
+          <span style={{fontSize:15,fontWeight:800,color:'#fff',letterSpacing:'0.06em',fontFamily:T.font.en}}>VANTAGE</span>
+          <span style={{fontSize:9,color:'rgba(74,144,217,0.4)',fontFamily:T.font.en,marginLeft:8,letterSpacing:'0.08em'}}>Q1 OKR</span>
+        </a>
+        <div style={{display:'flex',gap:3}}>
+          {items.map(it=><a key={it.id} href={`#${it.id}`} onClick={e=>{e.preventDefault();document.getElementById(it.id)?.scrollIntoView({behavior:'smooth'});}} className={`nav-pill${active===it.id?' active':''}`}>{it.label}{it.full&&<span style={{fontSize:9,opacity:0.4,fontFamily:T.font.en,marginLeft:4}}>{it.full}</span>}</a>)}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ═══ Metric Card ═══
+function MetricCard({m,delay}){
+  return(
+    <div className="metric-card" style={{border:`1px solid ${m.accent?T.accentBorder:T.border}`,animation:`metricPop 0.6s ${delay}s cubic-bezier(0.16,1,0.3,1) both`}}>
+      <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}><Icon name={m.icon} size={16} color={m.accent?T.accentLight:T.textMuted} glow={m.accent}/><span style={{fontSize:10,fontWeight:600,fontFamily:T.font.cn,color:T.textSec}}><Ed>{m.label}</Ed></span></div>
+      <div style={{fontSize:9,color:T.textMuted,fontFamily:T.font.en,marginBottom:6}}><Ed>{m.labelEn}</Ed></div>
+      <div className="num-glow" style={{fontSize:26,fontWeight:700,fontFamily:T.font.mono,color:m.good?T.green:T.accentLight,letterSpacing:'-0.03em'}}><Ed>{m.valueEn||m.value}</Ed></div>
+      {m.target&&<div style={{fontSize:10,color:T.textMuted,marginTop:4,fontFamily:T.font.en}}>Target: <Ed>{m.target}</Ed></div>}
+      {m.sub&&<div style={{fontSize:9,color:T.textMuted,marginTop:3}}><Ed>{m.sub}</Ed> <span style={{fontFamily:T.font.en}}><Ed>{m.subEn}</Ed></span></div>}
+    </div>
+  );
+}
+
+// ═══ KR Card ═══
+function KRCard({kr,expanded,onToggle}){
+  return(
+    <div className="kr-card glow-card" style={{background:T.bgCard,borderRadius:T.r.lg,border:`1px solid ${expanded?T.accentBorder:T.border}`,boxShadow:expanded?'0 0 30px rgba(74,144,217,0.08)':T.shadow.sm,marginBottom:16,overflow:'hidden'}}>
+      <div onClick={onToggle} onMouseEnter={e=>e.currentTarget.style.background=T.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background='transparent'} style={{padding:'20px 24px',cursor:'pointer',display:'flex',alignItems:'flex-start',gap:16,transition:'background 0.3s'}}>
+        <div style={{flex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9,flexWrap:'wrap'}}>
+            <span style={{fontSize:11,fontWeight:700,padding:'3px 11px',borderRadius:5,background:T.accentSoft,color:T.accentLight,fontFamily:T.font.mono}}>{kr.code}</span>
+            {kr.tags.map(t=><span key={t} style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(255,255,255,0.03)',color:T.textMuted,fontFamily:T.font.en,border:`1px solid ${T.borderLight}`,fontWeight:500}}>{t}</span>)}
+          </div>
+          <div style={{fontSize:16,fontWeight:600,color:T.text,lineHeight:1.5,fontFamily:T.font.cn,marginBottom:3}}><Ed>{kr.title}</Ed></div>
+          <div style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginBottom:8}}><Ed>{kr.titleEn}</Ed></div>
+          <div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn}}><Ed>{kr.summary}</Ed></div>
+          <div style={{fontSize:11,color:T.textMuted,fontFamily:T.font.en,marginTop:2}}><Ed>{kr.summaryEn}</Ed></div>
+        </div>
+        <ChevronIcon open={expanded}/>
+      </div>
+      {expanded&&(
+        <div className="kr-expanded" style={{padding:'0 24px 24px'}}>
+          <div style={{height:1,background:T.border,marginBottom:22}}/>
+          <div style={{marginBottom:22,padding:'16px 20px',background:T.bgElevated,borderRadius:T.r.md,borderLeft:`3px solid ${T.accent}`}}>
+            <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.1em',marginBottom:8,fontFamily:T.font.en}}>Q1 RESULT DETAIL</div>
+            <div style={{fontSize:14,color:T.textBody,lineHeight:1.8,fontFamily:T.font.cn}}><Ed>{kr.result}</Ed></div>
+            <div style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginTop:6,lineHeight:1.6}}><Ed>{kr.resultEn}</Ed></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:12,marginBottom:20}}>
+            {kr.metrics.map((m,i)=><MetricCard key={i} m={m} delay={i*0.06}/>)}
+          </div>
+          {kr.extraSection&&(
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:11,fontWeight:700,color:T.textSec,letterSpacing:'0.06em',marginBottom:12}}><span style={{fontFamily:T.font.cn}}><Ed>{kr.extraSection.title}</Ed></span><span style={{fontFamily:T.font.en,marginLeft:8,color:T.textMuted,fontWeight:400}}><Ed>{kr.extraSection.titleEn}</Ed></span></div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:12}}>{kr.extraSection.metrics.map((m,i)=><MetricCard key={i} m={m} delay={0.12+i*0.06}/>)}</div>
+            </div>
+          )}
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.1em',marginBottom:12,fontFamily:T.font.en}}>2026 ANNUAL GOALS</div>
+            {kr.annual.map((g,i)=>(<div key={i} style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10,animation:`fadeUp 0.35s ${0.15+i*0.07}s cubic-bezier(0.16,1,0.3,1) both`}}><span style={{color:T.accentLight,fontWeight:700,flexShrink:0,marginTop:2}}>▸</span><div><div style={{fontSize:13,color:T.textBody,lineHeight:1.7,fontFamily:T.font.cn}}><Ed>{g}</Ed></div><div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginTop:1}}><Ed>{kr.annualEn[i]}</Ed></div></div></div>))}
+          </div>
+          {kr.owner&&(
+            <div style={{marginBottom:16,padding:'12px 16px',background:'rgba(74,144,217,0.05)',borderRadius:T.r.sm,border:`1px solid ${T.borderLight}`}}>
+              <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.08em',marginBottom:4,fontFamily:T.font.en}}>OWNER</div>
+              <div style={{fontSize:13,color:T.textBody,fontFamily:T.font.en}}><Ed>{kr.owner}</Ed></div>
+            </div>
+          )}
+          {kr.improvement&&(<div style={{background:T.amberBg,borderRadius:T.r.md,padding:'16px 20px',border:`1px solid ${T.amberBorder}`,animation:'fadeUp 0.4s 0.3s cubic-bezier(0.16,1,0.3,1) both'}}><div style={{fontSize:10,fontWeight:700,color:T.amber,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>AREA FOR IMPROVEMENT</div><div style={{fontSize:13,color:T.amber,lineHeight:1.6,fontFamily:T.font.cn,opacity:0.85}}><Ed>{kr.improvement}</Ed></div><div style={{fontSize:11,color:'rgba(251,191,36,0.5)',fontFamily:T.font.en,marginTop:3}}><Ed>{kr.improvementEn}</Ed></div></div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ StarBorder Component ═══
+function StarBorder({color='cyan',speed='5s',thickness=1,children,style:extra}){
+  return(
+    <div className="star-border-container" style={{padding:`${thickness}px 0`,...extra}}>
+      <div className="border-gradient-bottom" style={{background:`radial-gradient(circle, ${color}, transparent 10%)`,animationDuration:speed}}/>
+      <div className="border-gradient-top" style={{background:`radial-gradient(circle, ${color}, transparent 10%)`,animationDuration:speed}}/>
+      <div className="inner-content">{children}</div>
+    </div>
+  );
+}
+
+// ═══ Login Overlay ═══
+function LoginOverlay({onLogin}){
+  const [user,setUser]=useState('');
+  const [pass,setPass]=useState('');
+  const [error,setError]=useState(false);
+  const [shaking,setShaking]=useState(false);
+  const passRef=useRef(null);
+
+  const submit=()=>{
+    if(user==='vantage'&&pass==='vantage'){
+      sessionStorage.setItem('vantage-auth','ok');
+      onLogin();
+    } else {
+      setError(true);setShaking(true);
+      setTimeout(()=>setError(false),3000);
+      setTimeout(()=>setShaking(false),500);
+    }
+  };
+
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:99999,background:'#06090f',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inter,sans-serif'}}>
+      {/* Animated background dots */}
+      <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(circle,rgba(74,144,217,0.04) 1px,transparent 1px)',backgroundSize:'40px 40px'}}/>
+
+      <StarBorder color="rgba(74,144,217,0.6)" speed="4s" thickness={2}
+        style={{animation:'heroTextIn 0.8s cubic-bezier(0.16,1,0.3,1) both',transform:shaking?'translateX(-8px)':'none',transition:'transform 0.1s'}}>
+        <div style={{padding:'48px 44px',width:380}}>
+          {/* Logo */}
+          <div style={{textAlign:'center',marginBottom:36}}>
+            <div className="shimmer-text" style={{fontSize:32,fontWeight:800,letterSpacing:'0.1em',fontFamily:'Inter,sans-serif',marginBottom:10}}>VANTAGE</div>
+            <div style={{width:80,height:1,background:'linear-gradient(90deg,transparent,rgba(74,144,217,0.5),transparent)',margin:'0 auto 14px'}}/>
+            <div style={{fontSize:10,color:'rgba(74,144,217,0.4)',letterSpacing:'0.25em',fontFamily:'Inter,sans-serif'}}>Q1 2026 OKR REVIEW</div>
+            <div style={{fontSize:9,color:'rgba(255,255,255,0.2)',letterSpacing:'0.15em',fontFamily:'Inter,sans-serif',marginTop:4}}>AUTHORIZED ACCESS ONLY</div>
+          </div>
+
+          {/* Error */}
+          <div style={{fontSize:12,color:'#f87171',marginBottom:12,textAlign:'center',opacity:error?1:0,transition:'opacity 0.3s',height:error?20:0,overflow:'hidden'}}>
+            Invalid credentials. Please try again.
+          </div>
+
+          {/* Inputs */}
+          <input className={`login-input${error?' error':''}`} type="text" placeholder="Username" value={user}
+            onChange={e=>setUser(e.target.value)}
+            onKeyDown={e=>{if(e.key==='Enter')passRef.current?.focus();}}
+            style={{marginBottom:12}}/>
+          <input ref={passRef} className={`login-input${error?' error':''}`} type="password" placeholder="Password" value={pass}
+            onChange={e=>setPass(e.target.value)}
+            onKeyDown={e=>{if(e.key==='Enter')submit();}}
+            style={{marginBottom:24}}/>
+
+          {/* Submit button */}
+          <button onClick={submit}
+            style={{width:'100%',padding:'14px',borderRadius:10,border:'1px solid rgba(74,144,217,0.2)',background:'linear-gradient(135deg,rgba(27,54,93,0.8),rgba(45,90,142,0.6))',color:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',transition:'all 0.3s cubic-bezier(0.16,1,0.3,1)',fontFamily:'Inter,sans-serif',letterSpacing:'0.05em'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='linear-gradient(135deg,rgba(45,90,142,0.9),rgba(74,144,217,0.7))';e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 4px 20px rgba(74,144,217,0.15)';}}
+            onMouseLeave={e=>{e.currentTarget.style.background='linear-gradient(135deg,rgba(27,54,93,0.8),rgba(45,90,142,0.6))';e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}>
+            Sign In
+          </button>
+
+          {/* Hint */}
+          <div style={{fontSize:10,color:'rgba(255,255,255,0.12)',textAlign:'center',marginTop:20,letterSpacing:'0.05em'}}>
+            Contact admin for access credentials
+          </div>
+        </div>
+      </StarBorder>
+    </div>
+  );
+}
+
+// ═══ Edit Components ═══
+function EditToolbar({editMode,onToggle,onAddObj,onAddPillar,onAddArea,onReset}){
+  if(!editMode) return null;
+  return(
+    <div className="edit-toolbar">
+      <span className="edit-badge">EDIT MODE</span>
+      <button className="edit-btn edit-btn-add" onClick={onAddObj}>+ Objective</button>
+      <button className="edit-btn edit-btn-add" onClick={onAddPillar}>+ Strategy Pillar</button>
+      <button className="edit-btn edit-btn-add" onClick={onAddArea}>+ Q2 Item</button>
+      <div style={{flex:1}}/>
+      <button className="edit-btn edit-btn-del" onClick={onReset}>↻ Reset All</button>
+      <button className="edit-btn edit-btn-add" onClick={onToggle} style={{background:'rgba(74,144,217,0.15)'}}>✓ Done</button>
+    </div>
+  );
+}
+
+function AddItemForm({fields,onSubmit,placeholder}){
+  const[vals,setVals]=useState(()=>fields.reduce((a,f)=>({...a,[f.key]:''}),{}));
+  const submit=()=>{if(Object.values(vals).some(v=>v.trim())){onSubmit(vals);setVals(fields.reduce((a,f)=>({...a,[f.key]:''}),{}));}};
+  return(
+    <div className="edit-form">
+      {fields.map(f=><input key={f.key} placeholder={f.placeholder} value={vals[f.key]} onChange={e=>setVals(p=>({...p,[f.key]:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter')submit();}} style={{flex:1}}/>)}
+      <button className="edit-btn edit-btn-add" onClick={submit}>Add</button>
+    </div>
+  );
+}
+
+function DelBtn({onClick,label}){
+  return <button className="edit-btn edit-btn-del" onClick={onClick} title={`Delete ${label}`}>✕ {label}</button>;
+}
+
+// ═══ App ═══
+function App(){
+  const [authed,setAuthed]=useState(()=>sessionStorage.getItem('vantage-auth')==='ok');
+  const [data,setData]=useState(getInitialData);
+  const [editMode,setEditMode]=useState(false);
+  const [expandedKR,setExpandedKR]=useState(null);
+  const [activeSection,setActiveSection]=useState('o1');
+  const toggleKR=useCallback(id=>setExpandedKR(prev=>prev===id?null:id),[]);
+
+  useEffect(()=>{
+    if(!authed)return;
+    const sections=document.querySelectorAll('section[id]');
+    const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');setActiveSection(e.target.id);}});},{rootMargin:'-5% 0px -50% 0px',threshold:0.03});
+    sections.forEach(s=>obs.observe(s));return()=>obs.disconnect();
+  },[authed]);
+
+  // CRUD helpers
+  const addObj=()=>setData(p=>({...p,objectives:[...p.objectives,{id:'o'+(p.objectives.length+1),status:'Not Started',statusEn:'Not Started',statusColor:T.textMuted,title:'新 Objective',titleEn:'New Objective',subtitle:'',subtitleEn:'',krs:[]}]}));
+  const delObj=id=>setData(p=>({...p,objectives:p.objectives.filter(o=>o.id!==id)}));
+  const addKR=objId=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:[...o.krs,{id:'kr'+Date.now(),code:'KR New',title:'新 Key Result',titleEn:'New Key Result',tags:[],summary:'',summaryEn:'',result:'',resultEn:'',annual:[],annualEn:[],metrics:[],owner:'',improvement:null,improvementEn:null}]}:o)}));
+  const delKR=(objId,krId)=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.filter(k=>k.id!==krId)}:o)}));
+  const addPillar=()=>setData(p=>({...p,strategy:{...p.strategy,pillars:[...p.strategy.pillars,{title:'新支柱',titleEn:'New Pillar',items:[],itemsEn:[],color:T.accent,icon:'chart'}]}}));
+  const addArea=()=>setData(p=>({...p,areas:{...p.areas,items:[...p.areas.items,{cn:'新改进项',en:'New improvement item'}]}}));
+  const delArea=idx=>setData(p=>({...p,areas:{...p.areas,items:p.areas.items.filter((_,i)=>i!==idx)}}));
+  const delPillar=idx=>setData(p=>({...p,strategy:{...p.strategy,pillars:p.strategy.pillars.filter((_,i)=>i!==idx)}}));
+
+  if(!authed) return <LoginOverlay onLogin={()=>setAuthed(true)}/>;
+
+  return(
+    <div className={editMode?'edit-mode-on':''}>
+      <HeroSection key="hero-post-login"/>
+      <EditToolbar editMode={editMode} onToggle={()=>setEditMode(!editMode)} onAddObj={addObj} onAddPillar={addPillar} onAddArea={addArea} onReset={()=>setData(getInitialData())}/>
+
+      {/* Edit Mode toggle button */}
+      {!editMode&&<button onClick={()=>setEditMode(true)} style={{position:'fixed',top:14,right:140,zIndex:250,padding:'7px 16px',borderRadius:20,border:'1px solid rgba(74,144,217,0.25)',background:'rgba(12,18,30,0.9)',backdropFilter:'blur(12px)',color:'#5BA3EC',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'Inter,sans-serif',transition:'all 0.3s',display:'flex',alignItems:'center',gap:5}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(74,144,217,0.15)';e.currentTarget.style.borderColor='rgba(74,144,217,0.4)';}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(12,18,30,0.9)';e.currentTarget.style.borderColor='rgba(74,144,217,0.25)';}}>✏️ Edit Mode</button>}
+      <TopNav active={activeSection}/>
+      <main style={{maxWidth:1060,margin:'0 auto',padding:'0 44px 120px'}}>
+        {/* Status Legend */}
+        <div className="sec-anim" style={{display:'flex',gap:24,justifyContent:'center',paddingTop:32,marginBottom:8}}>
+          {data.statusLegend.map((s,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:8,height:8,borderRadius:4,background:s.color,boxShadow:`0 0 8px ${s.color}40`}}/>
+              <span style={{fontSize:10,color:T.textSec,fontFamily:T.font.en}}>{s.label}</span>
+              <span style={{fontSize:9,color:T.textMuted,fontFamily:T.font.cn}}>{s.desc}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary Metrics */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:20}}>
+          {data.summaryMetrics.map((m,i)=>(
+            <div key={i} className={`sec-anim d${i+1} glow-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'22px 20px',border:`1px solid ${T.border}`,textAlign:'center'}}>
+              <div style={{marginBottom:8}}><Icon name={m.icon} size={22} color={m.good?T.green:T.accentLight} glow/></div>
+              <div className="num-glow" style={{fontSize:30,fontWeight:700,fontFamily:T.font.mono,color:m.good?T.green:T.accentLight}}><Ed>{m.value}</Ed></div>
+              <div style={{fontSize:12,color:T.text,marginTop:6,fontWeight:500,fontFamily:T.font.cn}}><Ed>{m.label}</Ed></div>
+              <div style={{fontSize:10,color:T.textSec,fontFamily:T.font.en,marginTop:2}}><Ed>{m.labelEn}</Ed></div>
+              {m.sub&&<div style={{fontSize:9,color:T.textMuted,marginTop:4}}><Ed>{m.sub}</Ed> <span style={{fontFamily:T.font.en}}><Ed>{m.subEn}</Ed></span></div>}
+            </div>
+          ))}
+        </div>
+
+        {/* Headline Metrics */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:14,marginBottom:48}}>
+          {data.headlineMetrics.map((m,i)=>(
+            <div key={i} className={`sec-anim d${i+1} glow-card`} style={{background:T.bgCard,borderRadius:T.r.md,padding:'20px 14px',border:`1px solid ${T.border}`,textAlign:'center'}}>
+              <div style={{marginBottom:8}}><Icon name={m.icon} size={22} color={m.good?T.green:T.accentLight} glow/></div>
+              <div className="num-glow" style={{fontSize:26,fontWeight:700,fontFamily:T.font.mono,color:m.good?T.green:T.accentLight}}><Ed>{m.value}</Ed></div>
+              <div style={{fontSize:11,color:T.text,marginTop:5,fontWeight:500,fontFamily:T.font.cn}}><Ed>{m.label}</Ed></div>
+              <div style={{fontSize:9.5,color:T.textSec,fontFamily:T.font.en,marginTop:1}}><Ed>{m.labelEn}</Ed></div>
+              {m.sub&&<div style={{fontSize:9,color:T.textMuted,marginTop:3}}><Ed>{m.sub}</Ed> <span style={{fontFamily:T.font.en}}><Ed>{m.subEn}</Ed></span></div>}
+            </div>
+          ))}
+        </div>
+
+        {data.objectives.map(obj=>(
+          <section key={obj.id} id={obj.id} className="edit-section">
+            <div className="sec-anim" style={{padding:'80px 0 36px',textAlign:'center',position:'relative'}}>
+              {editMode&&<div style={{position:'absolute',top:80,right:0}}><DelBtn onClick={()=>delObj(obj.id)} label="Objective"/></div>}
+              <div style={{display:'inline-flex',alignItems:'center',gap:12,marginBottom:14}}>
+                <div style={{width:40,height:1,background:T.border}}/>
+                <span style={{fontSize:11,fontWeight:800,padding:'5px 18px',borderRadius:20,background:`${obj.statusColor}15`,color:obj.statusColor,fontFamily:T.font.mono,letterSpacing:'0.06em'}}>{obj.id.toUpperCase()}</span>
+                <div style={{width:40,height:1,background:T.border}}/>
+              </div>
+              <h2 className="sec-underline title-gradient" style={{fontSize:32,fontWeight:900,fontFamily:T.font.cn,marginBottom:5}}><Ed>{obj.title}</Ed></h2>
+              <p style={{fontSize:13,color:T.textSec,fontFamily:T.font.en,marginBottom:10}}><Ed>{obj.titleEn}</Ed></p>
+              <p style={{fontSize:14,color:T.textBody,fontFamily:T.font.cn}}><Ed>{obj.subtitle}</Ed></p>
+              <p style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginTop:2}}><Ed>{obj.subtitleEn}</Ed></p>
+              <div style={{marginTop:12}}><span style={{fontSize:11,fontWeight:600,color:obj.statusColor,fontFamily:T.font.en}}>{obj.statusEn}</span></div>
+            </div>
+            {obj.krs.map(kr=>(
+              <div key={kr.id} style={{position:'relative'}}>
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delKR(obj.id,kr.id)} label="KR"/></div>}
+                <KRCard kr={kr} expanded={expandedKR===kr.id} onToggle={()=>toggleKR(kr.id)}/>
+              </div>
+            ))}
+            {editMode&&<div style={{margin:'8px 0 24px'}}><AddItemForm fields={[{key:'code',placeholder:'KR code (e.g. KR 1.4)'},{key:'title',placeholder:'KR title CN'},{key:'titleEn',placeholder:'KR title EN'}]} onSubmit={vals=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===obj.id?{...o,krs:[...o.krs,{id:'kr'+Date.now(),code:vals.code||'KR New',title:vals.title||'新 KR',titleEn:vals.titleEn||'New KR',tags:[],summary:'',summaryEn:'',result:'',resultEn:'',annual:[],annualEn:[],metrics:[],owner:'',improvement:null,improvementEn:null}]}:o)}))}/></div>}
+          </section>
+        ))}
+        <div className="section-sep"/>
+
+        <section id="strategy" className="edit-section">
+          <div className="sec-anim" style={{padding:'80px 0 36px',textAlign:'center'}}>
+            <div style={{display:'inline-flex',alignItems:'center',gap:12,marginBottom:14}}>
+              <div style={{width:40,height:1,background:T.border}}/><span style={{fontSize:11,fontWeight:800,padding:'5px 18px',borderRadius:20,background:`${T.accent}15`,color:T.accent,fontFamily:T.font.mono}}>STRATEGY</span><div style={{width:40,height:1,background:T.border}}/>
+            </div>
+            <h2 className="sec-underline title-gradient" style={{fontSize:32,fontWeight:900,fontFamily:T.font.cn,marginBottom:5}}><Ed>{data.strategy.title}</Ed></h2>
+            <p style={{fontSize:13,color:T.textSec,fontFamily:T.font.en}}><Ed>{data.strategy.titleEn}</Ed></p>
+            <div style={{marginTop:16}}><span style={{fontSize:20,color:T.accentLight,fontWeight:600,fontFamily:T.font.cn}}><Ed>{data.strategy.core}</Ed></span><br/><span style={{fontSize:13,color:T.textSec,fontFamily:T.font.en}}><Ed>{data.strategy.coreEn}</Ed></span></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20,marginBottom:36}}>
+            {data.strategy.pillars.map((p,i)=>(
+              <div key={i} className={`sec-anim d${i+1} glow-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'26px 22px',border:`1px solid ${T.border}`,position:'relative'}}>
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delPillar(i)} label="Pillar"/></div>}
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}><Icon name={p.icon} size={24} color={p.color} glow/><div style={{width:32,height:3,borderRadius:2,background:p.color}}/></div>
+                <h3 style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.font.cn,marginBottom:2}}><Ed>{p.title}</Ed></h3>
+                <div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginBottom:14}}><Ed>{p.titleEn}</Ed></div>
+                {p.items.map((item,j)=>(<div key={j} style={{padding:'8px 0',borderBottom:j<p.items.length-1?`1px solid ${T.borderLight}`:'none'}}><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn}}><Ed>{item}</Ed></div><div style={{fontSize:10.5,color:T.textSec,fontFamily:T.font.en,marginTop:1}}><Ed>{p.itemsEn[j]}</Ed></div></div>))}
+              </div>
+            ))}
+          </div>
+          <div className="sec-anim d4" style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.12em',marginBottom:16,fontFamily:T.font.en}}>REGIONAL EXPANSION</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14}}>
+            {(data.strategy.execution||[]).map((ex,i)=>(
+              <div key={i} className={`sec-anim d${i+5} glow-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'22px',border:`1px solid ${T.border}`}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+                  <Icon name={ex.icon} size={24} color={ex.color||T.accentLight} glow/>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:T.text,fontFamily:T.font.cn}}><Ed>{ex.title}</Ed></div>
+                    <div style={{fontSize:10,color:T.textSec,fontFamily:T.font.en}}><Ed>{ex.titleEn}</Ed></div>
+                  </div>
+                </div>
+                {(ex.items||[]).map((item,j)=>(
+                  <div key={j} style={{fontSize:12,color:T.textBody,fontFamily:T.font.cn,padding:'5px 0',borderTop:j>0?`1px solid ${T.borderLight}`:'none'}}>
+                    <Ed>{item}</Ed>
+                    <div style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en,marginTop:1}}><Ed>{(ex.itemsEn||[])[j]}</Ed></div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="areas" className="edit-section">
+          <div className="sec-anim" style={{padding:'80px 0 36px',textAlign:'center'}}>
+            <div style={{display:'inline-flex',alignItems:'center',gap:12,marginBottom:14}}>
+              <div style={{width:40,height:1,background:T.border}}/><span style={{fontSize:11,fontWeight:800,padding:'5px 18px',borderRadius:20,background:`${T.amber}15`,color:T.amber,fontFamily:T.font.mono}}>Q2</span><div style={{width:40,height:1,background:T.border}}/>
+            </div>
+            <h2 className="sec-underline title-gradient" style={{fontSize:32,fontWeight:900,fontFamily:T.font.cn,marginBottom:5}}><Ed>{data.areas.title}</Ed></h2>
+            <p style={{fontSize:13,color:T.textSec,fontFamily:T.font.en}}><Ed>{data.areas.titleEn}</Ed></p>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:720,margin:'0 auto'}}>
+            {data.areas.items.map((item,i)=>(
+              <div key={i} className={`sec-anim d${i+1} glow-card`} style={{display:'flex',alignItems:'flex-start',gap:14,background:T.bgCard,borderRadius:T.r.md,padding:'18px 22px',border:`1px solid ${T.border}`,position:'relative'}}>
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delArea(i)} label=""/></div>}
+                <div style={{width:26,height:26,borderRadius:7,flexShrink:0,background:T.accentSoft,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:T.accentLight,fontFamily:T.font.mono}}>{i+1}</div>
+                <div style={{flex:1}}><div style={{fontSize:14,color:T.textBody,lineHeight:1.6,fontFamily:T.font.cn}}><Ed>{item.cn}</Ed></div><div style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginTop:2}}><Ed>{item.en}</Ed></div></div>
+              </div>
+            ))}
+          </div>
+          {editMode&&<div style={{maxWidth:720,margin:'16px auto 0'}}><AddItemForm fields={[{key:'cn',placeholder:'改进项中文'},{key:'en',placeholder:'Improvement EN'}]} onSubmit={vals=>setData(p=>({...p,areas:{...p.areas,items:[...p.areas.items,{cn:vals.cn||'新改进项',en:vals.en||'New improvement item'}]}}))}/></div>}
+        </section>
+
+        <div style={{textAlign:'center',padding:'80px 0 20px',borderTop:`1px solid ${T.border}`,marginTop:80}}>
+          <div style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en}}>{data.date} · Global Marketing Team · Confidential · Internal Use Only</div>
+          <div style={{fontSize:10,color:T.accentLight,fontFamily:T.font.en,marginTop:6,opacity:0.5}}>Next Review: {data.nextReviewDate} (Q2 Review)</div>
+        </div>
+      </main>
+      <SaveBar/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
