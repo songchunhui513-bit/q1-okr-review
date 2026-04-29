@@ -281,8 +281,21 @@
   .edit-form input{padding:8px 12px;border-radius:7;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#dce3f0;font-size:12px;outline:none;font-family:'Inter',sans-serif;transition:border-color 0.2s}
   .edit-form input:focus{border-color:rgba(74,144,217,0.35)}
   .edit-form input::placeholder{color:rgba(255,255,255,0.2)}
-  .edit-toolbar{position:sticky;top:52px;z-index:150;background:rgba(74,144,217,0.06);backdrop-filter:blur(12px);border-bottom:1px solid rgba(74,144,217,0.12);padding:10px 40px;display:flex;align-items:center;gap:12px;animation:slideDown 0.3s ease}
-  .edit-badge{padding:4px 12px;border-radius:12;font-size:10px;font-weight:700;background:rgba(74,144,217,0.15);color:#5BA3EC;font-family:'Inter',sans-serif;letter-spacing:0.08em;border:1px solid rgba(74,144,217,0.25)}
+  .edit-panel{position:fixed;bottom:90px;right:28px;z-index:300;width:280px;background:rgba(12,18,30,0.95);backdrop-filter:blur(16px) saturate(1.2);border:1px solid rgba(74,144,217,0.15);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 24px rgba(74,144,217,0.06);animation:editPanelIn 0.35s cubic-bezier(0.16,1,0.3,1) both;overflow:hidden}
+  @keyframes editPanelIn{0%{opacity:0;transform:translateY(12px) scale(0.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .edit-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid rgba(74,144,217,0.08)}
+  .edit-panel-section{border-bottom:1px solid rgba(255,255,255,0.03)}
+  .edit-panel-section:last-of-type{border-bottom:none}
+  .edit-panel-trigger{display:flex;align-items:center;gap:10px;padding:12px 18px;cursor:pointer;transition:background 0.2s;user-select:none;width:100%;background:none;border:none;color:inherit;font:inherit;text-align:left}
+  .edit-panel-trigger:hover{background:rgba(74,144,217,0.05)}
+  .edit-panel-sub{padding:6px 18px 14px;display:flex;flex-direction:column;gap:6px;animation:fadeUp 0.25s ease both}
+  .edit-panel-btn{display:flex;align-items:center;gap:6px;width:100%;padding:9px 14px;border-radius:8;border:1px solid rgba(74,144,217,0.12);background:rgba(74,144,217,0.04);color:#5BA3EC;font-size:11px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.2s}
+  .edit-panel-btn:hover{background:rgba(74,144,217,0.1);border-color:rgba(74,144,217,0.25);transform:translateY(-1px)}
+  .edit-panel-btn.danger{border-color:rgba(248,113,113,0.12);background:rgba(248,113,113,0.04);color:#f87171}
+  .edit-panel-btn.danger:hover{background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.25)}
+  .edit-panel-footer{padding:12px 18px;border-top:1px solid rgba(74,144,217,0.08);display:flex;gap:8px}
+  .edit-panel-badge{padding:3px 10px;border-radius:10;font-size:9px;font-weight:700;background:rgba(74,144,217,0.12);color:#5BA3EC;font-family:'Inter',sans-serif;letter-spacing:0.08em}
+  .edit-section-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;justify-content:center}
 
   /* Save bar */
   .save-bar{position:fixed;bottom:28px;right:28px;z-index:300;display:flex;gap:8px}
@@ -351,7 +364,9 @@ function Prism({height=3.5,baseWidth=5.5,animationType='rotate',glow=1,offset={x
 const T={primary:'#dce3f0',accent:'#4A90D9',accentLight:'#5BA3EC',accentSoft:'rgba(74,144,217,0.1)',accentBorder:'rgba(74,144,217,0.22)',bg:'#06090f',bgCard:'#0c121e',bgCardHover:'#101828',bgElevated:'#141c2e',bgMuted:'#080c15',border:'rgba(255,255,255,0.05)',borderLight:'rgba(255,255,255,0.03)',text:'#dce3f0',textBody:'#b8c4d8',textSec:'#6b7a92',textMuted:'#3e4d63',green:'#34d399',greenBg:'rgba(52,211,153,0.08)',greenBorder:'rgba(52,211,153,0.18)',amber:'#fbbf24',amberBg:'rgba(251,191,36,0.06)',amberBorder:'rgba(251,191,36,0.15)',r:{xs:6,sm:8,md:12,lg:16},shadow:{xs:'0 1px 3px rgba(0,0,0,0.4)',sm:'0 2px 8px rgba(0,0,0,0.35)',md:'0 4px 20px rgba(0,0,0,0.45)'},font:{cn:"'Noto Serif SC','PingFang SC',serif",en:"'Inter',-apple-system,sans-serif",mono:"'JetBrains Mono','SF Mono',monospace"}};
 
 // ═══ Ed (editable) ═══
-function Ed({children,tag:Tag='span',style}){return <Tag contentEditable suppressContentEditableWarning style={{...style,display:'inline'}}>{children}</Tag>;}
+function Ed({children,tag:Tag='span',style}){
+  return <Tag contentEditable suppressContentEditableWarning style={{...style,display:'inline'}}>{children}</Tag>;
+}
 
 // ═══ Chevron ═══
 function ChevronIcon({open}){return <span className={`chevron${open?' open':''}`}><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>;}
@@ -387,11 +402,15 @@ function Icon({name,size=20,color,glow=false}){
 }
 
 // ═══ Save Bar ═══
-function SaveBar(){
+function SaveBar({editMode,onToggleEdit}){
   const[s,setS]=useState('idle');
   const save=()=>{localStorage.setItem('okr-save',document.documentElement.outerHTML);setS('saved');setTimeout(()=>setS('idle'),2000);};
   const dl=()=>{const b=new Blob([document.documentElement.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Q1 OKR Review.html';a.click();URL.revokeObjectURL(a.href);setS('dl');setTimeout(()=>setS('idle'),2000);};
-  return <div className="save-bar"><button onClick={save} className={s==='saved'?'done':''}>{s==='saved'?'✓ Saved':'💾 Save'}</button><button onClick={dl} className={s==='dl'?'done':''}>{s==='dl'?'✓ Downloaded':'⬇ Download'}</button></div>;
+  return <div className="save-bar">
+    <button onClick={onToggleEdit} style={editMode?{borderColor:'rgba(74,144,217,0.4)',background:'rgba(74,144,217,0.12)',color:'#5BA3EC'}:{}}>{editMode?'✏️ 编辑中':'✏️ 编辑'}</button>
+    <button onClick={save} className={s==='saved'?'done':''}>{s==='saved'?'✓ 已保存':'💾 保存'}</button>
+    <button onClick={dl} className={s==='dl'?'done':''}>{s==='dl'?'✓ 已下载':'⬇ 下载'}</button>
+  </div>;
 }
 
 // ═══ Data (verified from image — 3 Objectives, 9 KRs, all owners, correct numbers) ═══
@@ -621,11 +640,22 @@ function MetricCard({m,delay}){
   );
 }
 
+// ═══ Inline Edit Item Delete Button ═══
+function ItemDelBtn({onClick}){
+  return <button onClick={onClick} style={{position:'absolute',top:6,right:6,zIndex:10,width:20,height:20,borderRadius:4,border:'1px solid rgba(248,113,113,0.2)',background:'rgba(248,113,113,0.08)',color:'#f87171',fontSize:10,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.2s',padding:0,lineHeight:1}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(248,113,113,0.2)';}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(248,113,113,0.08)';}} title="删除">✕</button>;
+}
+
 // ═══ KR Card ═══
-function KRCard({kr,expanded,onToggle}){
+function KRCard({kr,expanded,onToggle,editMode,objId,setData}){
+  // Detail CRUD helpers
+  const addMetric=()=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===kr.id?{...k,metrics:[...k.metrics,{label:'新指标',labelEn:'New Metric',value:'—',icon:'chart'}]}:k)}:o)}));
+  const delMetric=idx=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===kr.id?{...k,metrics:k.metrics.filter((_,i)=>i!==idx)}:k)}:o)}));
+  const addAnnual=()=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===kr.id?{...k,annual:[...k.annual,'新年度目标'],annualEn:[...k.annualEn,'New annual goal']}:k)}:o)}));
+  const delAnnual=idx=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===kr.id?{...k,annual:k.annual.filter((_,i)=>i!==idx),annualEn:k.annualEn.filter((_,i)=>i!==idx)}:k)}:o)}));
+
   return(
     <div className="kr-card glow-card" style={{background:T.bgCard,borderRadius:T.r.lg,border:`1px solid ${expanded?T.accentBorder:T.border}`,boxShadow:expanded?'0 0 30px rgba(74,144,217,0.08)':T.shadow.sm,marginBottom:16,overflow:'hidden'}}>
-      <div onClick={onToggle} onMouseEnter={e=>e.currentTarget.style.background=T.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background='transparent'} style={{padding:'20px 24px',cursor:'pointer',display:'flex',alignItems:'flex-start',gap:16,transition:'background 0.3s'}}>
+      <div style={{padding:'20px 24px',display:'flex',alignItems:'flex-start',gap:16}}>
         <div style={{flex:1}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9,flexWrap:'wrap'}}>
             <span style={{fontSize:11,fontWeight:700,padding:'3px 11px',borderRadius:5,background:T.accentSoft,color:T.accentLight,fontFamily:T.font.mono}}>{kr.code}</span>
@@ -636,36 +666,67 @@ function KRCard({kr,expanded,onToggle}){
           <div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn}}><Ed>{kr.summary}</Ed></div>
           <div style={{fontSize:11,color:T.textMuted,fontFamily:T.font.en,marginTop:2}}><Ed>{kr.summaryEn}</Ed></div>
         </div>
-        <ChevronIcon open={expanded}/>
+        <div onClick={e=>{e.stopPropagation();onToggle();}} style={{cursor:'pointer',padding:'6px 8px',marginTop:4,flexShrink:0,display:'flex',alignItems:'center',gap:4,borderRadius:6,transition:'background 0.2s'}} title={expanded?'收起':'展开详情'}
+          onMouseEnter={e=>e.currentTarget.style.background='rgba(74,144,217,0.08)'}
+          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+          <span style={{fontSize:9,color:T.textMuted,fontFamily:T.font.en,whiteSpace:'nowrap'}}>{expanded?'收起':'展开'}</span>
+          <ChevronIcon open={expanded}/>
+        </div>
       </div>
       {expanded&&(
         <div className="kr-expanded" style={{padding:'0 24px 24px'}}>
           <div style={{height:1,background:T.border,marginBottom:22}}/>
           <div style={{marginBottom:22,padding:'16px 20px',background:T.bgElevated,borderRadius:T.r.md,borderLeft:`3px solid ${T.accent}`}}>
-            <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.1em',marginBottom:8,fontFamily:T.font.en}}>Q1 RESULT DETAIL</div>
+            <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.1em',marginBottom:8,fontFamily:T.font.en}}>Q1 结果详情</div>
             <div style={{fontSize:14,color:T.textBody,lineHeight:1.8,fontFamily:T.font.cn}}><Ed>{kr.result}</Ed></div>
             <div style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginTop:6,lineHeight:1.6}}><Ed>{kr.resultEn}</Ed></div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:12,marginBottom:20}}>
-            {kr.metrics.map((m,i)=><MetricCard key={i} m={m} delay={i*0.06}/>)}
+
+          {/* Metrics Section */}
+          <div style={{marginBottom:20}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.08em',fontFamily:T.font.en}}>KEY METRICS</div>
+              {editMode&&<button className="edit-btn edit-btn-add" onClick={addMetric} style={{padding:'3px 10px',fontSize:10}}>＋ 指标</button>}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:12}}>
+              {kr.metrics.map((m,i)=>(
+                <div key={i} style={{position:'relative'}}>
+                  {editMode&&<ItemDelBtn onClick={()=>delMetric(i)}/>}
+                  <MetricCard m={m} delay={i*0.06}/>
+                </div>
+              ))}
+            </div>
           </div>
+
           {kr.extraSection&&(
             <div style={{marginBottom:20}}>
               <div style={{fontSize:11,fontWeight:700,color:T.textSec,letterSpacing:'0.06em',marginBottom:12}}><span style={{fontFamily:T.font.cn}}><Ed>{kr.extraSection.title}</Ed></span><span style={{fontFamily:T.font.en,marginLeft:8,color:T.textMuted,fontWeight:400}}><Ed>{kr.extraSection.titleEn}</Ed></span></div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:12}}>{kr.extraSection.metrics.map((m,i)=><MetricCard key={i} m={m} delay={0.12+i*0.06}/>)}</div>
             </div>
           )}
+
+          {/* Annual Goals Section */}
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.1em',marginBottom:12,fontFamily:T.font.en}}>2026 ANNUAL GOALS</div>
-            {kr.annual.map((g,i)=>(<div key={i} style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10,animation:`fadeUp 0.35s ${0.15+i*0.07}s cubic-bezier(0.16,1,0.3,1) both`}}><span style={{color:T.accentLight,fontWeight:700,flexShrink:0,marginTop:2}}>▸</span><div><div style={{fontSize:13,color:T.textBody,lineHeight:1.7,fontFamily:T.font.cn}}><Ed>{g}</Ed></div><div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginTop:1}}><Ed>{kr.annualEn[i]}</Ed></div></div></div>))}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.08em',fontFamily:T.font.en}}>2026 年度目标</div>
+              {editMode&&<button className="edit-btn edit-btn-add" onClick={addAnnual} style={{padding:'3px 10px',fontSize:10}}>＋ 目标</button>}
+            </div>
+            {kr.annual.map((g,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10,animation:`fadeUp 0.35s ${0.15+i*0.07}s cubic-bezier(0.16,1,0.3,1) both`,position:'relative',paddingRight:28}}>
+                {editMode&&<button onClick={()=>delAnnual(i)} style={{position:'absolute',top:2,right:0,zIndex:10,width:18,height:18,borderRadius:4,border:'1px solid rgba(248,113,113,0.2)',background:'rgba(248,113,113,0.08)',color:'#f87171',fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0,lineHeight:1}} title="删除">✕</button>}
+                <span style={{color:T.accentLight,fontWeight:700,flexShrink:0,marginTop:2}}>▸</span>
+                <div><div style={{fontSize:13,color:T.textBody,lineHeight:1.7,fontFamily:T.font.cn}}><Ed>{g}</Ed></div><div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginTop:1}}><Ed>{kr.annualEn[i]}</Ed></div></div>
+              </div>
+            ))}
           </div>
+
           {kr.owner&&(
             <div style={{marginBottom:16,padding:'12px 16px',background:'rgba(74,144,217,0.05)',borderRadius:T.r.sm,border:`1px solid ${T.borderLight}`}}>
-              <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.08em',marginBottom:4,fontFamily:T.font.en}}>OWNER</div>
+              <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.08em',marginBottom:4,fontFamily:T.font.en}}>负责人</div>
               <div style={{fontSize:13,color:T.textBody,fontFamily:T.font.en}}><Ed>{kr.owner}</Ed></div>
             </div>
           )}
-          {kr.improvement&&(<div style={{background:T.amberBg,borderRadius:T.r.md,padding:'16px 20px',border:`1px solid ${T.amberBorder}`,animation:'fadeUp 0.4s 0.3s cubic-bezier(0.16,1,0.3,1) both'}}><div style={{fontSize:10,fontWeight:700,color:T.amber,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>AREA FOR IMPROVEMENT</div><div style={{fontSize:13,color:T.amber,lineHeight:1.6,fontFamily:T.font.cn,opacity:0.85}}><Ed>{kr.improvement}</Ed></div><div style={{fontSize:11,color:'rgba(251,191,36,0.5)',fontFamily:T.font.en,marginTop:3}}><Ed>{kr.improvementEn}</Ed></div></div>)}
+          {kr.improvement&&(<div style={{background:T.amberBg,borderRadius:T.r.md,padding:'16px 20px',border:`1px solid ${T.amberBorder}`,animation:'fadeUp 0.4s 0.3s cubic-bezier(0.16,1,0.3,1) both'}}><div style={{fontSize:10,fontWeight:700,color:T.amber,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>改进方向</div><div style={{fontSize:13,color:T.amber,lineHeight:1.6,fontFamily:T.font.cn,opacity:0.85}}><Ed>{kr.improvement}</Ed></div><div style={{fontSize:11,color:'rgba(251,191,36,0.5)',fontFamily:T.font.en,marginTop:3}}><Ed>{kr.improvementEn}</Ed></div></div>)}
         </div>
       )}
     </div>
@@ -752,34 +813,63 @@ function LoginOverlay({onLogin}){
 }
 
 // ═══ Edit Components ═══
-function EditToolbar({editMode,onToggle,onAddObj,onAddPillar,onAddArea,onReset}){
+function EditPanel({editMode,onToggle,onAddObj,onAddPillar,onAddArea,onReset}){
+  const[openSection,setOpenSection]=useState(null);
+  const toggle=sec=>setOpenSection(prev=>prev===sec?null:sec);
   if(!editMode) return null;
+  const sections=[
+    {key:'obj',icon:'📋',title:'目标管理',sub:[{label:'添加新目标',icon:'＋',action:onAddObj,variant:'add'}]},
+    {key:'pillar',icon:'📊',title:'战略支柱',sub:[{label:'添加新支柱',icon:'＋',action:onAddPillar,variant:'add'}]},
+    {key:'area',icon:'🎯',title:'改进方向',sub:[{label:'添加改进项',icon:'＋',action:onAddArea,variant:'add'}]},
+  ];
   return(
-    <div className="edit-toolbar">
-      <span className="edit-badge">EDIT MODE</span>
-      <button className="edit-btn edit-btn-add" onClick={onAddObj}>+ Objective</button>
-      <button className="edit-btn edit-btn-add" onClick={onAddPillar}>+ Strategy Pillar</button>
-      <button className="edit-btn edit-btn-add" onClick={onAddArea}>+ Q2 Item</button>
-      <div style={{flex:1}}/>
-      <button className="edit-btn edit-btn-del" onClick={onReset}>↻ Reset All</button>
-      <button className="edit-btn edit-btn-add" onClick={onToggle} style={{background:'rgba(74,144,217,0.15)'}}>✓ Done</button>
+    <div className="edit-panel">
+      <div className="edit-panel-header">
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span className="edit-panel-badge">编辑模式</span>
+        </div>
+        <span style={{fontSize:10,color:T.textMuted,fontFamily:T.font.cn}}>点击文本直接编辑</span>
+      </div>
+      {sections.map(sec=>(
+        <div key={sec.key} className="edit-panel-section">
+          <button className="edit-panel-trigger" onClick={()=>toggle(sec.key)}>
+            <span style={{fontSize:16}}>{sec.icon}</span>
+            <span style={{flex:1,fontSize:12,fontWeight:600,color:T.text,fontFamily:T.font.cn}}>{sec.title}</span>
+            <ChevronIcon open={openSection===sec.key}/>
+          </button>
+          {openSection===sec.key&&(
+            <div className="edit-panel-sub">
+              {sec.sub.map((item,i)=>(
+                <button key={i} className={`edit-panel-btn${item.variant==='del'?' danger':''}`} onClick={()=>{item.action();setOpenSection(null);}}>
+                  <span style={{fontSize:13}}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="edit-panel-footer">
+        <button className="edit-panel-btn danger" onClick={onReset} style={{flex:1,justifyContent:'center'}}><span>↻</span><span>重置全部</span></button>
+        <button className="edit-panel-btn" onClick={onToggle} style={{flex:1,justifyContent:'center',background:'rgba(74,144,217,0.1)',borderColor:'rgba(74,144,217,0.3)'}}><span>✓</span><span>完成编辑</span></button>
+      </div>
     </div>
   );
 }
 
-function AddItemForm({fields,onSubmit,placeholder}){
+function AddItemForm({fields,onSubmit,submitLabel}){
   const[vals,setVals]=useState(()=>fields.reduce((a,f)=>({...a,[f.key]:''}),{}));
   const submit=()=>{if(Object.values(vals).some(v=>v.trim())){onSubmit(vals);setVals(fields.reduce((a,f)=>({...a,[f.key]:''}),{}));}};
   return(
     <div className="edit-form">
       {fields.map(f=><input key={f.key} placeholder={f.placeholder} value={vals[f.key]} onChange={e=>setVals(p=>({...p,[f.key]:e.target.value}))} onKeyDown={e=>{if(e.key==='Enter')submit();}} style={{flex:1}}/>)}
-      <button className="edit-btn edit-btn-add" onClick={submit}>Add</button>
+      <button className="edit-btn edit-btn-add" onClick={submit}>{submitLabel||'添加'}</button>
     </div>
   );
 }
 
 function DelBtn({onClick,label}){
-  return <button className="edit-btn edit-btn-del" onClick={onClick} title={`Delete ${label}`}>✕ {label}</button>;
+  return <button className="edit-btn edit-btn-del" onClick={onClick} title={`删除 ${label}`}>✕ {label}</button>;
 }
 
 // ═══ App ═══
@@ -813,10 +903,7 @@ function App(){
   return(
     <div className={editMode?'edit-mode-on':''}>
       <HeroSection key="hero-post-login"/>
-      <EditToolbar editMode={editMode} onToggle={()=>setEditMode(!editMode)} onAddObj={addObj} onAddPillar={addPillar} onAddArea={addArea} onReset={()=>setData(getInitialData())}/>
-
-      {/* Edit Mode toggle button */}
-      {!editMode&&<button onClick={()=>setEditMode(true)} style={{position:'fixed',top:14,right:140,zIndex:250,padding:'7px 16px',borderRadius:20,border:'1px solid rgba(74,144,217,0.25)',background:'rgba(12,18,30,0.9)',backdropFilter:'blur(12px)',color:'#5BA3EC',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'Inter,sans-serif',transition:'all 0.3s',display:'flex',alignItems:'center',gap:5}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(74,144,217,0.15)';e.currentTarget.style.borderColor='rgba(74,144,217,0.4)';}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(12,18,30,0.9)';e.currentTarget.style.borderColor='rgba(74,144,217,0.25)';}}>✏️ Edit Mode</button>}
+      <EditPanel editMode={editMode} onToggle={()=>setEditMode(false)} onAddObj={addObj} onAddPillar={addPillar} onAddArea={addArea} onReset={()=>setData(getInitialData())}/>
       <TopNav active={activeSection}/>
       <main style={{maxWidth:1060,margin:'0 auto',padding:'0 44px 120px'}}>
         {/* Status Legend */}
@@ -859,7 +946,7 @@ function App(){
         {data.objectives.map(obj=>(
           <section key={obj.id} id={obj.id} className="edit-section">
             <div className="sec-anim" style={{padding:'80px 0 36px',textAlign:'center',position:'relative'}}>
-              {editMode&&<div style={{position:'absolute',top:80,right:0}}><DelBtn onClick={()=>delObj(obj.id)} label="Objective"/></div>}
+              {editMode&&<div style={{position:'absolute',top:80,right:0}}><DelBtn onClick={()=>delObj(obj.id)} label="目标"/></div>}
               <div style={{display:'inline-flex',alignItems:'center',gap:12,marginBottom:14}}>
                 <div style={{width:40,height:1,background:T.border}}/>
                 <span style={{fontSize:11,fontWeight:800,padding:'5px 18px',borderRadius:20,background:`${obj.statusColor}15`,color:obj.statusColor,fontFamily:T.font.mono,letterSpacing:'0.06em'}}>{obj.id.toUpperCase()}</span>
@@ -873,11 +960,11 @@ function App(){
             </div>
             {obj.krs.map(kr=>(
               <div key={kr.id} style={{position:'relative'}}>
-                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delKR(obj.id,kr.id)} label="KR"/></div>}
-                <KRCard kr={kr} expanded={expandedKR===kr.id} onToggle={()=>toggleKR(kr.id)}/>
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delKR(obj.id,kr.id)} label="指标"/></div>}
+                <KRCard kr={kr} expanded={expandedKR===kr.id} onToggle={()=>toggleKR(kr.id)} editMode={editMode} objId={obj.id} setData={setData}/>
               </div>
             ))}
-            {editMode&&<div style={{margin:'8px 0 24px'}}><AddItemForm fields={[{key:'code',placeholder:'KR code (e.g. KR 1.4)'},{key:'title',placeholder:'KR title CN'},{key:'titleEn',placeholder:'KR title EN'}]} onSubmit={vals=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===obj.id?{...o,krs:[...o.krs,{id:'kr'+Date.now(),code:vals.code||'KR New',title:vals.title||'新 KR',titleEn:vals.titleEn||'New KR',tags:[],summary:'',summaryEn:'',result:'',resultEn:'',annual:[],annualEn:[],metrics:[],owner:'',improvement:null,improvementEn:null}]}:o)}))}/></div>}
+            {editMode&&<div style={{margin:'8px 0 24px'}}><AddItemForm fields={[{key:'code',placeholder:'KR 编号（如 KR 1.4）'},{key:'title',placeholder:'KR 标题（中文）'},{key:'titleEn',placeholder:'KR 标题（英文）'}]} submitLabel="添加 KR" onSubmit={vals=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===obj.id?{...o,krs:[...o.krs,{id:'kr'+Date.now(),code:vals.code||'KR 新',title:vals.title||'新 KR',titleEn:vals.titleEn||'New KR',tags:[],summary:'',summaryEn:'',result:'',resultEn:'',annual:[],annualEn:[],metrics:[],owner:'',improvement:null,improvementEn:null}]}:o)}))}/></div>}
           </section>
         ))}
         <div className="section-sep"/>
@@ -894,7 +981,7 @@ function App(){
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20,marginBottom:36}}>
             {data.strategy.pillars.map((p,i)=>(
               <div key={i} className={`sec-anim d${i+1} glow-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'26px 22px',border:`1px solid ${T.border}`,position:'relative'}}>
-                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delPillar(i)} label="Pillar"/></div>}
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delPillar(i)} label="支柱"/></div>}
                 <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}><Icon name={p.icon} size={24} color={p.color} glow/><div style={{width:32,height:3,borderRadius:2,background:p.color}}/></div>
                 <h3 style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.font.cn,marginBottom:2}}><Ed>{p.title}</Ed></h3>
                 <div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginBottom:14}}><Ed>{p.titleEn}</Ed></div>
@@ -935,13 +1022,13 @@ function App(){
           <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:720,margin:'0 auto'}}>
             {data.areas.items.map((item,i)=>(
               <div key={i} className={`sec-anim d${i+1} glow-card`} style={{display:'flex',alignItems:'flex-start',gap:14,background:T.bgCard,borderRadius:T.r.md,padding:'18px 22px',border:`1px solid ${T.border}`,position:'relative'}}>
-                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delArea(i)} label=""/></div>}
+                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:50}}><DelBtn onClick={()=>delArea(i)} label="此项"/></div>}
                 <div style={{width:26,height:26,borderRadius:7,flexShrink:0,background:T.accentSoft,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:T.accentLight,fontFamily:T.font.mono}}>{i+1}</div>
                 <div style={{flex:1}}><div style={{fontSize:14,color:T.textBody,lineHeight:1.6,fontFamily:T.font.cn}}><Ed>{item.cn}</Ed></div><div style={{fontSize:12,color:T.textSec,fontFamily:T.font.en,marginTop:2}}><Ed>{item.en}</Ed></div></div>
               </div>
             ))}
           </div>
-          {editMode&&<div style={{maxWidth:720,margin:'16px auto 0'}}><AddItemForm fields={[{key:'cn',placeholder:'改进项中文'},{key:'en',placeholder:'Improvement EN'}]} onSubmit={vals=>setData(p=>({...p,areas:{...p.areas,items:[...p.areas.items,{cn:vals.cn||'新改进项',en:vals.en||'New improvement item'}]}}))}/></div>}
+          {editMode&&<div style={{maxWidth:720,margin:'16px auto 0'}}><AddItemForm fields={[{key:'cn',placeholder:'改进项（中文）'},{key:'en',placeholder:'改进项（英文）'}]} submitLabel="添加改进项" onSubmit={vals=>setData(p=>({...p,areas:{...p.areas,items:[...p.areas.items,{cn:vals.cn||'新改进项',en:vals.en||'New improvement item'}]}}))}/></div>}
         </section>
 
         <div style={{textAlign:'center',padding:'80px 0 20px',borderTop:`1px solid ${T.border}`,marginTop:80}}>
@@ -949,7 +1036,7 @@ function App(){
           <div style={{fontSize:10,color:T.accentLight,fontFamily:T.font.en,marginTop:6,opacity:0.5}}>Next Review: {data.nextReviewDate} (Q2 Review)</div>
         </div>
       </main>
-      <SaveBar/>
+      <SaveBar editMode={editMode} onToggleEdit={()=>setEditMode(prev=>!prev)}/>
     </div>
   );
 }
