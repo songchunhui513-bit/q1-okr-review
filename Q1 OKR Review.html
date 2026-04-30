@@ -8,6 +8,8 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+<script src="https://unpkg.com/recharts@2.15.3/umd/Recharts.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -88,6 +90,15 @@
   @keyframes ldrSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
   @keyframes neonPulse{0%,100%{opacity:1;filter:drop-shadow(0 0 8px rgba(212,64,64,0.6)) drop-shadow(0 0 24px rgba(200,30,30,0.3))}50%{opacity:0.92;filter:drop-shadow(0 0 14px rgba(212,64,64,0.8)) drop-shadow(0 0 36px rgba(200,30,30,0.45))}}
   @keyframes neonBorder{0%,100%{border-color:rgba(212,64,64,0.25);box-shadow:0 0 12px rgba(212,64,64,0.15),inset 0 0 12px rgba(212,64,64,0.05)}50%{border-color:rgba(212,64,64,0.4);box-shadow:0 0 20px rgba(212,64,64,0.25),inset 0 0 20px rgba(212,64,64,0.08)}}
+
+  .dash-page{opacity:0;transform:translateY(50px) scale(0.97);transition:opacity 0.8s cubic-bezier(0.16,1,0.3,1),transform 0.8s cubic-bezier(0.16,1,0.3,1)}
+  .dash-page.vis{opacity:1;transform:translateY(0) scale(1)}
+  .dash-page .dash-child{opacity:0;transform:translateY(30px);transition:opacity 0.6s cubic-bezier(0.16,1,0.3,1),transform 0.6s cubic-bezier(0.16,1,0.3,1)}
+  .dash-page.vis .dash-child{opacity:1;transform:translateY(0)}
+  .dash-page.vis .dash-child:nth-child(1){transition-delay:0.1s}
+  .dash-page.vis .dash-child:nth-child(2){transition-delay:0.2s}
+  .dash-page.vis .dash-child:nth-child(3){transition-delay:0.3s}
+  .dash-page.vis .dash-child:nth-child(4){transition-delay:0.4s}
 
   /* Glow card — edge light trace */
   .glow-card{
@@ -352,6 +363,359 @@
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
+const {ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, LabelList} = Recharts;
+
+// ═══ Dashboard Data ═══
+const DASHBOARDS = [
+  {id:1,title:"Retail 整体表现",subtitle:"2026 Q1 Retail FTD",description:"2026 年 Q1 vs 2025 Q4 Retail FTD 绝对值增加 19.2%，\\n但占比有所下降，主要下降来自于印度停投",metricLabel1:"Retail FTD",metricLabel2:"Retail FTD 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"68,598",percentText:"40.7%",absolute:68598,percent:40.7},q2026:{label:"2026 Q1",absoluteText:"81,751",percentText:"34.3%",absolute:81751,percent:34.3}},kpi1:{label:"Retail FTD 绝对值",value:"+19.2%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比下降",value:"-6.4%",subtext:"40.7% → 34.3%",isUp:false},chart:{title:"2026 Q1 Retail FTD表现及整体占比变化",leftAxisLabel:"Retail FTD (绝对值)",rightAxisLabel:"FTD 占 VANTAGE% (占比)",barLegend:"Retail FTD (绝对值)",lineLegend:"FTD 占 VANTAGE% (占比)",leftDomain:[0,100000],leftTicks:[0,25000,50000,75000,100000],format:"number"}},
+  {id:2,title:"Retail 整体表现",subtitle:"2026 Q1 Retail ND",description:"2026 年 Q1 vs 2025 Q4 Retail ND 绝对值增加 55.9%，\\n占比从 24.6% 上升到 28.9%，主要 ND 占比上升来自印度",metricLabel1:"Retail ND",metricLabel2:"Retail ND 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"$83.3M",percentText:"24.6%",absolute:83.3,percent:24.6},q2026:{label:"2026 Q1",absoluteText:"$129.9M",percentText:"28.9%",absolute:129.9,percent:28.9}},kpi1:{label:"Retail ND 绝对值",value:"+55.9%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比上升",value:"+4.3%",subtext:"24.6% → 28.9%",isUp:true},chart:{title:"2026 Q1 Retail ND表现及整体占比变化",leftAxisLabel:"Net Deposit (M)",rightAxisLabel:"ND 占 VANTAGE% (占比)",barLegend:"NET DEPOSIT (绝对值)",lineLegend:"ND 占 VANTAGE% (占比)",leftDomain:[0,150],leftTicks:[0,50,100,150],format:"currencyM"}},
+  {id:3,title:"Retail 整体表现",subtitle:"2026 Q1 Retail TV",description:"2026 年 Q1 vs 2025 Q4 TV 绝对值增加 29.7%，\\n占比稍有下降，从 29.1% 下降到 28.1%",metricLabel1:"Retail TV",metricLabel2:"Retail TV 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"$2,306.48 Bn",percentText:"29.1%",absolute:2306.48,percent:29.1},q2026:{label:"2026 Q1",absoluteText:"$2,990.70 Bn",percentText:"28.1%",absolute:2990.70,percent:28.1}},kpi1:{label:"Retail TV 绝对值",value:"+29.7%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比下降",value:"-1.0%",subtext:"29.1% → 28.1%",isUp:false},chart:{title:"2026 Q1 Retail TV表现及整体占比变化",leftAxisLabel:"Trading Volume (Bn)",rightAxisLabel:"TV 占 VANTAGE% (占比)",barLegend:"TRADING VOLUME (绝对值)",lineLegend:"TV 占 VANTAGE% (占比)",leftDomain:[0,3000],leftTicks:[0,750,1500,2250,3000],format:"currencyBn"}},
+  {id:4,title:"Paid Ads 整体表现",subtitle:"Paid Ads 2026 Q1 FTD",description:"2026 年 Q1 vs 2025 Q4 FTD 绝对值增加 35.2%，\\n占比稍有下降，从 15.5% 下降到 14.8%，主要下降来自印度停投",metricLabel1:"2026 Q1 FTD",metricLabel2:"2026 Q1 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"26,041",percentText:"15.5%",absolute:26041,percent:15.5},q2026:{label:"2026 Q1",absoluteText:"35,205",percentText:"14.8%",absolute:35205,percent:14.8}},kpi1:{label:"Paid Ads FTD 绝对值",value:"+35.2%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比下降",value:"-0.7%",subtext:"15.5% → 14.8%",isUp:false},chart:{title:"Paid Ads 2026 Q1 FTD表现及整体占比变化",leftAxisLabel:"FTD (绝对值)",rightAxisLabel:"FTD 占 VANTAGE% (占比)",barLegend:"FTD (绝对值)",lineLegend:"FTD 占 VANTAGE% (占比)",leftDomain:[0,40000],leftTicks:[0,10000,20000,30000,40000],format:"number"}},
+  {id:5,title:"Paid Ads 整体表现",subtitle:"Paid Ads 2026 Q1 ND",description:"2026 年 Q1 vs 2025 Q4 ND 绝对值增加 44.6%，\\n占比从 8.5% 上升至 9.2%",metricLabel1:"2026 Q1 ND",metricLabel2:"2026 Q1 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"$28.7M",percentText:"8.5%",absolute:28.7,percent:8.5},q2026:{label:"2026 Q1",absoluteText:"$41.5M",percentText:"9.2%",absolute:41.5,percent:9.2}},kpi1:{label:"Paid Ads ND 绝对值",value:"+44.6%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比上升",value:"+0.7%",subtext:"8.5% → 9.2%",isUp:true},chart:{title:"Paid Ads 2026 Q1 ND表现及整体占比变化",leftAxisLabel:"Net Deposit (M)",rightAxisLabel:"ND 占 VANTAGE% (占比)",barLegend:"NET DEPOSIT (绝对值)",lineLegend:"ND 占 VANTAGE% (占比)",leftDomain:[0,50],leftTicks:[0,10,20,30,40,50],format:"currencyM"}},
+  {id:6,title:"Paid Ads 整体表现",subtitle:"Paid Ads 2026 Q1 TV",description:"2026 年 Q1 vs 2025 Q4 TV 绝对值增加 43.7%，\\n占比从 7.4% 上升至 7.9%",metricLabel1:"2026 Q1 TV",metricLabel2:"2026 Q1 集团占比",tableData:{q2025:{label:"2025 Q4",absoluteText:"$584.66 Bn",percentText:"7.4%",absolute:584.66,percent:7.4},q2026:{label:"2026 Q1",absoluteText:"$840.31 Bn",percentText:"7.9%",absolute:840.31,percent:7.9}},kpi1:{label:"Paid Ads TV 绝对值",value:"+43.7%",subtext:"2026 Q1 vs 2025 Q4",isUp:true},kpi2:{label:"集团占比上升",value:"+0.5%",subtext:"7.4% → 7.9%",isUp:true},chart:{title:"Paid Ads 2026 Q1 TV表现及整体占比变化",leftAxisLabel:"Trading Volume (Bn)",rightAxisLabel:"TV 占 VANTAGE% (占比)",barLegend:"TRADING VOLUME (绝对值)",lineLegend:"TV 占 VANTAGE% (占比)",leftDomain:[0,1000],leftTicks:[0,250,500,750,1000],format:"currencyBn"}},
+  {id:7,layoutType:"profit",title:"Paid Ads 整体表现",subtitle:"Paid Ads 2026 Q1 利润",description:"2026 Q1 利润 vs 2025 Q4 明显提升，上涨 52%\\n$23.9M >> $36.3M (+52% QoQ)",metricLabel1:"Q4 利润",metricLabel2:"Q1 利润",tableData:{q2025:{label:"2025 Q4",absoluteText:"$23.9M",percentText:"",absolute:23.9},q2026:{label:"2026 Q1",absoluteText:"$36.3M",percentText:"",absolute:36.3}},kpi1:{label:"2026 Q1 利润",value:"$36.3M",subtext:"Paid Ads",isUp:true},kpi2:{label:"环比增长",value:"+52%",subtext:"Q1 vs Q4",isUp:true},chart:{title:"Paid Ads 2026 Q1 利润 (Quarterly)",leftAxisLabel:"Profit (M)",rightAxisLabel:"",barLegend:"PROFIT (绝对值)",lineLegend:"",leftDomain:[0,40],leftTicks:[0,10,20,30,40],format:"currencyM"},monthlyData:[{name:"Oct-25",absolute:8.6,absoluteText:"$8.6M"},{name:"Nov-25",absolute:6.0,absoluteText:"$6.0M"},{name:"Dec-25",absolute:9.3,absoluteText:"$9.3M"},{name:"Jan-26",absolute:11.1,absoluteText:"$11.1M"},{name:"Feb-26",absolute:10.7,absoluteText:"$10.7M"},{name:"Mar-26",absolute:14.5,absoluteText:"$14.5M"}]},
+  {id:8,layoutType:"region_table",title:"Paid Ads 地域表现",subtitle:"2026 Q1 vs 2025 Q4 地域数据",description:"Paid Ads Q1 APAC ROI 上升明显，从 8.8 上涨到 16.4，主要原因2月开始印度大幅削减预算，ND 持续增长",tableRegionsQuarter1:[{quarter:"2025 Q4",region:"APAC",register:"153,817",ftd:"15,818",nd:"$7.9M",tv:"152.73 Bn",roi:"8.8"},{quarter:"2025 Q4",region:"EU",register:"37,518",ftd:"7,307",nd:"$16.8M",tv:"343.44 Bn",roi:"7.6"},{quarter:"2025 Q4",region:"LATAM",register:"24,518",ftd:"1,550",nd:"$0.8M",tv:"23.51 Bn",roi:"1.4"},{quarter:"2025 Q4",region:"MENA",register:"31,706",ftd:"1,136",nd:"$1.9M",tv:"47.71 Bn",roi:"3.0"}],tableRegionsQuarter2:[{quarter:"2026 Q1",region:"APAC",register:"173,090",ftd:"20,647",nd:"$14.8M",tv:"298.97 Bn",roi:"16.4"},{quarter:"2026 Q1",region:"EU",register:"40,551",ftd:"10,457",nd:"$20.2M",tv:"445.46 Bn",roi:"7.9"},{quarter:"2026 Q1",region:"LATAM",register:"27,091",ftd:"1,940",nd:"$1.0M",tv:"24.51 Bn",roi:"1.3"},{quarter:"2026 Q1",region:"MENA",register:"16,608",ftd:"1,797",nd:"$3.8M",tv:"53.30 Bn",roi:"5.9"}]}
+];
+
+// ═══ Dashboard Components ═══
+const CustomAbsoluteLabel = (props) => {
+  const { x, y, width, absoluteText } = props;
+  return (
+    React.createElement('g', null,
+      React.createElement('text', {x:x+width/2, y:y-15, fill:'rgba(255,60,60,0.4)', textAnchor:'middle', dominantBaseline:'middle', fontWeight:'bold', fontSize:14, style:{filter:'blur(4px)'}}, absoluteText),
+      React.createElement('text', {x:x+width/2, y:y-15, fill:'#fff', textAnchor:'middle', dominantBaseline:'middle', fontWeight:'bold', fontSize:14}, absoluteText)
+    )
+  );
+};
+
+const CustomPercentLabel = (props) => {
+  const { x, y, index, percentText } = props;
+  const isFirst = index === 0;
+  const bubbleY = y + (isFirst ? 30 : -30);
+  return (
+    React.createElement('g', null,
+      React.createElement('rect', {x:x-24, y:bubbleY-14, width:48, height:28, rx:4, fill:'#7f1d1d', stroke:'#ef4444', strokeWidth:0.5}),
+      React.createElement('text', {x:x, y:bubbleY, fill:'#fff', textAnchor:'middle', dominantBaseline:'middle', fontSize:12, fontWeight:'bold'}, percentText),
+      React.createElement('path', {d:'M '+(x-4)+' '+(isFirst?bubbleY-14:bubbleY+14)+' L '+x+' '+(isFirst?bubbleY-18:bubbleY+18)+' L '+(x+4)+' '+(isFirst?bubbleY-14:bubbleY+14)+' Z', fill:'#7f1d1d', stroke:'#ef4444', strokeWidth:0.5, strokeLinejoin:'miter'})
+    )
+  );
+};
+
+const ArrowUpIcon = () => React.createElement('svg',{width:28,height:28,viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round'},React.createElement('line',{x1:12,y1:19,x2:12,y2:5}),React.createElement('polyline',{points:'5 12 12 5 19 12'}));
+const ArrowDownIcon = () => React.createElement('svg',{width:28,height:28,viewBox:'0 0 24 24',fill:'none',stroke:'#ef4444',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round'},React.createElement('line',{x1:12,y1:5,x2:12,y2:19}),React.createElement('polyline',{points:'19 12 12 19 5 12'}));
+const BarChartIcon = () => React.createElement('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'#ef4444',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'},React.createElement('line',{x1:18,y1:20,x2:18,y2:10}),React.createElement('line',{x1:12,y1:20,x2:12,y2:4}),React.createElement('line',{x1:6,y1:20,x2:6,y2:14}));
+
+function DashboardCard({data, count, editMode}) {
+  const ro = !editMode;
+  const chartData = [
+    {name:data.tableData.q2025.label, absolute:data.tableData.q2025.absolute, percent:data.tableData.q2025.percent, absoluteText:data.tableData.q2025.absoluteText, percentText:data.tableData.q2025.percentText},
+    {name:data.tableData.q2026.label, absolute:data.tableData.q2026.absolute, percent:data.tableData.q2026.percent, absoluteText:data.tableData.q2026.absoluteText, percentText:data.tableData.q2026.percentText}
+  ];
+  const formatTick = (val, format) => {
+    if (val === 0) return '0';
+    if (format === 'currencyM') return '$' + val + 'M';
+    if (format === 'currencyBn') return '$' + val.toLocaleString() + ' Bn';
+    return val.toLocaleString();
+  };
+  const cardBg = {background:'rgba(30,10,10,0.2)', border:'1px solid rgba(100,20,20,0.3)', borderRadius:16, padding:24, backdropFilter:'blur(8px)', position:'relative', overflow:'hidden'};
+  const hoverOverlay = {position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(220,38,38,0.05), transparent)', opacity:0.5, pointerEvents:'none'};
+  return (
+    <div style={{maxWidth:1400, margin:'0 auto', padding:'16px 32px', position:'relative', zIndex:10, scrollSnapAlign:'center', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center'}}>
+      <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:40}}>
+        <div style={{width:6, height:32, background:'#dc2626', borderRadius:9999, boxShadow:'0 0 10px rgba(220,38,38,0.8)'}}/>
+        <h1 style={{fontSize:30, fontWeight:700, color:'#fff', letterSpacing:'0.05em'}}><Ed readOnly={ro}>{data.title}</Ed></h1>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1.3fr', gap:40}}>
+        <div style={{display:'flex', flexDirection:'column', gap:24}}>
+          <div>
+            <h2 style={{fontSize:24, fontWeight:700, color:'#fff', marginBottom:12}}><Ed readOnly={ro}>{data.subtitle}</Ed></h2>
+            <p style={{color:'#9ca3af', fontSize:14, lineHeight:1.6, maxWidth:400, whiteSpace:'pre-wrap'}}><Ed readOnly={ro}>{data.description}</Ed></p>
+          </div>
+          <div style={{...cardBg}}>
+            <div style={hoverOverlay}/>
+            <table style={{width:'100%', position:'relative', zIndex:10, textAlign:'left', borderCollapse:'collapse'}}>
+              <thead><tr style={{borderBottom:'1px solid rgba(127,29,29,0.4)', color:'#d1d5db'}}>
+                <th style={{paddingBottom:16, fontWeight:500, padding:'0 8px'}}><Ed readOnly={ro}>Quarter</Ed></th>
+                <th style={{paddingBottom:16, fontWeight:500, padding:'0 8px'}}><Ed readOnly={ro}>{data.metricLabel1}</Ed></th>
+                <th style={{paddingBottom:16, fontWeight:500, padding:'0 8px', textAlign:'right'}}><Ed readOnly={ro}>{data.metricLabel2}</Ed></th>
+              </tr></thead>
+              <tbody style={{color:'#fff', fontSize:18}}>
+                <tr style={{borderBottom:'1px solid rgba(127,29,29,0.2)'}}>
+                  <td style={{padding:'16px 8px', fontWeight:300}}><Ed readOnly={ro}>{data.tableData.q2025.label}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:500}}><Ed readOnly={ro}>{data.tableData.q2025.absoluteText}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:700, color:'#ef4444', textAlign:'right'}}><Ed readOnly={ro}>{data.tableData.q2025.percentText}</Ed></td>
+                </tr>
+                <tr>
+                  <td style={{padding:'16px 8px', fontWeight:300}}><Ed readOnly={ro}>{data.tableData.q2026.label}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:500}}><Ed readOnly={ro}>{data.tableData.q2026.absoluteText}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:700, color:'#ef4444', textAlign:'right'}}><Ed readOnly={ro}>{data.tableData.q2026.percentText}</Ed></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
+            {[data.kpi1, data.kpi2].map((kpi, ki) => (
+              <div key={ki} style={{...cardBg, padding:20, display:'flex', alignItems:'flex-start', gap:16}}>
+                <div style={{flexShrink:0, width:48, height:48, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', ...(kpi.isUp ? {background:'linear-gradient(135deg,#ef4444,#991b1b)', border:'1px solid #f87171', boxShadow:'0 0 15px rgba(220,38,38,0.5)'} : {background:'#450a0a', border:'1px solid rgba(239,68,68,0.3)', boxShadow:'0 0 15px rgba(153,27,27,0.4)'})}}>
+                  {kpi.isUp ? <ArrowUpIcon/> : <ArrowDownIcon/>}
+                </div>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <span style={{color:'#d1d5db', fontSize:12, marginBottom:4}}><Ed readOnly={ro}>{kpi.label}</Ed></span>
+                  <span style={{fontSize:30, fontWeight:700, color:'#fff', letterSpacing:'-0.02em', lineHeight:1, marginBottom:8, textShadow:'0 0 20px rgba(212,64,64,0.3)'}}><Ed readOnly={ro}>{kpi.value}</Ed></span>
+                  <span style={{color:'rgba(255,255,255,0.5)', fontSize:11}}><Ed readOnly={ro}>{kpi.subtext}</Ed></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{position:'relative', ...cardBg, padding:'20px 32px', display:'flex', flexDirection:'column', minHeight:400}}>
+          <div style={{display:'flex', flexDirection:'column', marginBottom:32, gap:12}}>
+            <div style={{display:'flex', alignItems:'center', gap:8}}>
+              <BarChartIcon/>
+              <h3 style={{fontSize:15, fontWeight:700, color:'#fff', lineHeight:1.3}}><Ed readOnly={ro}>{data.chart.title}</Ed></h3>
+            </div>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:24, fontSize:12, color:'#d1d5db', width:'100%', marginTop:8}}>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <div style={{width:16, height:16, background:'#dc2626', borderRadius:2, boxShadow:'0 0 8px rgba(220,38,38,0.5)'}}/>
+                <span>{data.chart.barLegend}</span>
+              </div>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <span style={{color:'#fff', letterSpacing:'0.2em', fontSize:8}}>-○-</span>
+                <span>{data.chart.lineLegend}</span>
+              </div>
+            </div>
+          </div>
+          <div style={{flexGrow:1, width:'100%', position:'relative'}}>
+            <ResponsiveContainer width="100%" height={350}>
+              <ComposedChart data={chartData} margin={{top:30,right:10,left:20,bottom:5}}>
+                <defs>
+                  <linearGradient id={'barGlow-'+data.id} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff4545" stopOpacity={1}/>
+                    <stop offset="30%" stopColor="#e11d48" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#881337" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#4a0e0e" vertical={false} strokeDasharray="3 3" opacity={0.6}/>
+                <XAxis dataKey="name" axisLine={{stroke:'#4a0e0e'}} tickLine={false} tick={{fill:'#ffffff',fontSize:12,fontWeight:500}} dy={10}/>
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} width={80} tick={{fill:'#ffffff',fontSize:11}} domain={data.chart.leftDomain} ticks={data.chart.leftTicks} tickFormatter={(v)=>formatTick(v,data.chart.format)} label={{value:data.chart.leftAxisLabel,position:'insideTopLeft',offset:-10,fill:'#ffffff',fontSize:10,dy:-20,dx:25}}/>
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} width={60} tick={{fill:'#ffffff',fontSize:11}} tickFormatter={(v)=>v+'%'} domain={[0,60]} ticks={[0,15,30,45,60]} label={{value:data.chart.rightAxisLabel,position:'insideTopRight',offset:-10,fill:'#ffffff',fontSize:10,dy:-20,dx:-25}}/>
+                <Bar yAxisId="left" dataKey="absolute" barSize={60} fill={'url(#barGlow-'+data.id+')'} radius={[2,2,0,0]}>
+                  <LabelList dataKey="absoluteText" content={(props)=>{var row=chartData[props.index];return <CustomAbsoluteLabel {...props} absoluteText={row.absoluteText}/>;}}/>
+                </Bar>
+                <Line yAxisId="right" type="linear" dataKey="percent" stroke="#ffffff" strokeWidth={2} strokeDasharray="4 4" dot={(props)=><circle key={'dot-'+props.index} cx={props.cx} cy={props.cy} r={6} stroke="#ffffff" strokeWidth={2.5} fill="#c81e2b" strokeDasharray="none"/>} activeDot={(props)=><circle key={'adot-'+props.index} cx={props.cx} cy={props.cy} r={8} stroke="#ffffff" strokeWidth={2.5} fill="#c81e2b" strokeDasharray="none"/>}>
+                  <LabelList dataKey="percentText" content={(props)=>{var row=chartData[props.index];return <CustomPercentLabel {...props} percentText={row.percentText}/>;}}/>
+                </Line>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{position:'absolute', bottom:16, right:24, color:'#6b7280', fontWeight:500, letterSpacing:'0.1em', fontSize:12}}>{data.id}/{count}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfitSection({data, count, editMode}) {
+  const ro = !editMode;
+  const qChartData = [
+    {name:data.tableData.q2025.label, absolute:data.tableData.q2025.absolute, absoluteText:data.tableData.q2025.absoluteText},
+    {name:data.tableData.q2026.label, absolute:data.tableData.q2026.absolute, absoluteText:data.tableData.q2026.absoluteText}
+  ];
+  const mChartData = data.monthlyData || [];
+  const formatTick = (val, format) => {
+    if (val === 0) return '0';
+    if (format === 'currencyM') return '$' + val + 'M';
+    if (format === 'currencyBn') return '$' + val.toLocaleString() + ' Bn';
+    return val.toLocaleString();
+  };
+  const cardBg = {background:'rgba(30,10,10,0.2)', border:'1px solid rgba(100,20,20,0.3)', borderRadius:16, padding:24, backdropFilter:'blur(8px)', position:'relative', overflow:'hidden'};
+  const hoverOverlay = {position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(220,38,38,0.05), transparent)', opacity:0.5, pointerEvents:'none'};
+  return (
+    <div style={{maxWidth:1400, margin:'0 auto', padding:'16px 32px', position:'relative', zIndex:10, scrollSnapAlign:'center', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center'}}>
+      <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:40}}>
+        <div style={{width:6, height:32, background:'#dc2626', borderRadius:9999, boxShadow:'0 0 10px rgba(220,38,38,0.8)'}}/>
+        <h1 style={{fontSize:30, fontWeight:700, color:'#fff', letterSpacing:'0.05em'}}><Ed readOnly={ro}>{data.title}</Ed></h1>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 2fr', gap:32}}>
+        <div style={{display:'flex', flexDirection:'column', gap:24}}>
+          <div>
+            <h2 style={{fontSize:24, fontWeight:700, color:'#fff', marginBottom:12}}><Ed readOnly={ro}>{data.subtitle}</Ed></h2>
+            <p style={{color:'#9ca3af', fontSize:14, lineHeight:1.6, maxWidth:400, whiteSpace:'pre-wrap'}}><Ed readOnly={ro}>{data.description}</Ed></p>
+          </div>
+          <div style={{...cardBg}}>
+            <div style={hoverOverlay}/>
+            <table style={{width:'100%', position:'relative', zIndex:10, textAlign:'left', borderCollapse:'collapse'}}>
+              <thead><tr style={{borderBottom:'1px solid rgba(127,29,29,0.4)', color:'#d1d5db'}}>
+                <th style={{paddingBottom:16, fontWeight:500, padding:'0 8px'}}><Ed readOnly={ro}>Quarter</Ed></th>
+                <th style={{paddingBottom:16, fontWeight:500, padding:'0 8px', textAlign:'right'}}><Ed readOnly={ro}>{data.metricLabel2}</Ed></th>
+              </tr></thead>
+              <tbody style={{color:'#fff', fontSize:18}}>
+                <tr style={{borderBottom:'1px solid rgba(127,29,29,0.2)'}}>
+                  <td style={{padding:'16px 8px', fontWeight:300}}><Ed readOnly={ro}>{data.tableData.q2025.label}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:500, textAlign:'right'}}><Ed readOnly={ro}>{data.tableData.q2025.absoluteText}</Ed></td>
+                </tr>
+                <tr>
+                  <td style={{padding:'16px 8px', fontWeight:300}}><Ed readOnly={ro}>{data.tableData.q2026.label}</Ed></td>
+                  <td style={{padding:'16px 8px', fontWeight:500, textAlign:'right'}}><Ed readOnly={ro}>{data.tableData.q2026.absoluteText}</Ed></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
+            {[data.kpi1, data.kpi2].map((kpi, ki) => (
+              <div key={ki} style={{...cardBg, padding:20, display:'flex', alignItems:'flex-start', gap:16}}>
+                <div style={{flexShrink:0, width:48, height:48, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', ...(kpi.isUp ? {background:'linear-gradient(135deg,#ef4444,#991b1b)', border:'1px solid #f87171', boxShadow:'0 0 15px rgba(220,38,38,0.5)'} : {background:'#450a0a', border:'1px solid rgba(239,68,68,0.3)', boxShadow:'0 0 15px rgba(153,27,27,0.4)'})}}>
+                  {kpi.isUp ? <ArrowUpIcon/> : <ArrowDownIcon/>}
+                </div>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <span style={{color:'#d1d5db', fontSize:12, marginBottom:4}}><Ed readOnly={ro}>{kpi.label}</Ed></span>
+                  <span style={{fontSize:30, fontWeight:700, color:'#fff', letterSpacing:'-0.02em', lineHeight:1, marginBottom:8, textShadow:'0 0 20px rgba(212,64,64,0.3)'}}><Ed readOnly={ro}>{kpi.value}</Ed></span>
+                  <span style={{color:'rgba(255,255,255,0.5)', fontSize:11}}><Ed readOnly={ro}>{kpi.subtext}</Ed></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{position:'relative', ...cardBg, padding:'20px 32px', display:'flex', flexDirection:'column', minHeight:400}}>
+          <div style={{display:'flex', flexDirection:'column', marginBottom:32, gap:12, textAlign:'center'}}>
+            <div style={{display:'flex', alignItems:'center', gap:8}}>
+              <BarChartIcon/>
+              <h3 style={{fontSize:15, fontWeight:700, color:'#fff', lineHeight:1.3}}><Ed readOnly={ro}>Paid Ads 2026 Q1 利润趋势</Ed></h3>
+            </div>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#d1d5db', width:'100%', marginTop:8}}>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <div style={{width:16, height:16, background:'#dc2626', borderRadius:2, boxShadow:'0 0 8px rgba(220,38,38,0.5)'}}/>
+                <span>PROFIT (绝对值)</span>
+              </div>
+            </div>
+          </div>
+          <div style={{flexGrow:1, width:'100%', position:'relative', display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
+            <ResponsiveContainer width="100%" height={320}>
+              <ComposedChart data={qChartData} margin={{top:30,right:10,left:10,bottom:5}}>
+                <defs><linearGradient id={'barGlow-'+data.id+'-q'} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff4545" stopOpacity={1}/><stop offset="30%" stopColor="#e11d48" stopOpacity={0.8}/><stop offset="100%" stopColor="#881337" stopOpacity={0.4}/></linearGradient></defs>
+                <CartesianGrid stroke="#4a0e0e" vertical={false} strokeDasharray="3 3" opacity={0.6}/>
+                <XAxis dataKey="name" axisLine={{stroke:'#4a0e0e'}} tickLine={false} tick={{fill:'#ffffff',fontSize:12,fontWeight:500}} dy={10}/>
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} width={45} tick={{fill:'#ffffff',fontSize:11}} domain={data.chart.leftDomain} ticks={data.chart.leftTicks} tickFormatter={(v)=>formatTick(v,data.chart.format)}/>
+                <Bar yAxisId="left" dataKey="absolute" barSize={50} fill={'url(#barGlow-'+data.id+'-q)'} radius={[2,2,0,0]}>
+                  <LabelList dataKey="absoluteText" content={(props)=>{var row=qChartData[props.index];return <CustomAbsoluteLabel {...props} absoluteText={row.absoluteText}/>;}}/>
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={320}>
+              <ComposedChart data={mChartData} margin={{top:30,right:10,left:10,bottom:5}}>
+                <defs><linearGradient id={'barGlow-'+data.id+'-m'} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff4545" stopOpacity={1}/><stop offset="30%" stopColor="#e11d48" stopOpacity={0.8}/><stop offset="100%" stopColor="#881337" stopOpacity={0.4}/></linearGradient></defs>
+                <CartesianGrid stroke="#4a0e0e" vertical={false} strokeDasharray="3 3" opacity={0.6}/>
+                <XAxis dataKey="name" axisLine={{stroke:'#4a0e0e'}} tickLine={false} tick={{fill:'#ffffff',fontSize:11,fontWeight:500}} dy={10}/>
+                <YAxis yAxisId="left" hide={true} domain={data.chart.leftDomain}/>
+                <Bar yAxisId="left" dataKey="absolute" barSize={35} fill={'url(#barGlow-'+data.id+'-m)'} radius={[2,2,0,0]}>
+                  <LabelList dataKey="absoluteText" content={(props)=>{var row=mChartData[props.index];return <CustomAbsoluteLabel {...props} absoluteText={row.absoluteText}/>;}}/>
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{position:'absolute', bottom:16, right:24, color:'#6b7280', fontWeight:500, letterSpacing:'0.1em', fontSize:12}}>{data.id}/{count}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RegionTableSection({data, count, editMode}) {
+  const ro = !editMode;
+  const cardBg = {background:'rgba(30,10,10,0.2)', border:'1px solid rgba(100,20,20,0.3)', borderRadius:16, padding:24, backdropFilter:'blur(8px)', position:'relative', overflow:'hidden'};
+  const hoverOverlay = {position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(220,38,38,0.05), transparent)', opacity:0.5, pointerEvents:'none'};
+  const thStyle = {paddingBottom:16, fontWeight:500, padding:'0 16px'};
+  const tdStyle = {padding:'12px 16px', fontWeight:300};
+  const tdRight = {padding:'12px 16px', fontWeight:300, textAlign:'right'};
+  const roiStyle = {padding:'12px 16px', fontWeight:700, textAlign:'right', color:'#ef4444'};
+  return (
+    <div style={{maxWidth:1400, margin:'0 auto', padding:'16px 32px', position:'relative', zIndex:10, scrollSnapAlign:'center', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center'}}>
+      <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:40}}>
+        <div style={{width:6, height:32, background:'#dc2626', borderRadius:9999, boxShadow:'0 0 10px rgba(220,38,38,0.8)'}}/>
+        <h1 style={{fontSize:30, fontWeight:700, color:'#fff', letterSpacing:'0.05em'}}><Ed readOnly={ro}>{data.title}</Ed></h1>
+      </div>
+      <div style={{display:'flex', flexDirection:'column', gap:24}}>
+        <div>
+          <h2 style={{fontSize:24, fontWeight:700, color:'#fff', marginBottom:12}}><Ed readOnly={ro}>{data.subtitle}</Ed></h2>
+          <p style={{color:'#9ca3af', fontSize:14, lineHeight:1.6, maxWidth:800, whiteSpace:'pre-wrap'}}><Ed readOnly={ro}>{data.description}</Ed></p>
+        </div>
+        <div style={{...cardBg, overflowX:'auto'}}>
+          <div style={hoverOverlay}/>
+          <table style={{width:'100%', position:'relative', zIndex:10, textAlign:'left', borderCollapse:'collapse', minWidth:800}}>
+            <thead><tr style={{borderBottom:'1px solid rgba(127,29,29,0.4)', color:'#d1d5db', fontSize:14}}>
+              <th style={thStyle}>Quarter</th><th style={thStyle}>Region</th>
+              <th style={{...thStyle, textAlign:'right'}}>Register</th><th style={{...thStyle, textAlign:'right'}}>FTD</th>
+              <th style={{...thStyle, textAlign:'right'}}>Net Deposit</th><th style={{...thStyle, textAlign:'right'}}>Trading volume</th>
+              <th style={{...thStyle, textAlign:'right'}}>ROI</th>
+            </tr></thead>
+            <tbody style={{color:'#fff', fontSize:16}}>
+              {(data.tableRegionsQuarter1||[]).map((r, i) => (
+                <tr key={'q1-'+i} style={{borderBottom:'1px solid rgba(127,29,29,0.1)'}}>
+                  {i===0 && <td rowSpan={4} style={{padding:'12px 16px', fontWeight:300, color:'#9ca3af', verticalAlign:'top', paddingTop:20}}>{r.quarter}</td>}
+                  <td style={{...tdStyle, fontWeight:500}}><Ed readOnly={ro}>{r.region}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.register}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.ftd}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.nd}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.tv}</Ed></td>
+                  <td style={roiStyle}><Ed readOnly={ro}>{r.roi}</Ed></td>
+                </tr>
+              ))}
+              {(data.tableRegionsQuarter2||[]).map((r, i) => (
+                <tr key={'q2-'+i} style={{borderBottom:'1px solid rgba(127,29,29,0.1)', ...(i===0?{borderTop:'1px solid rgba(127,29,29,0.4)'}:{})}}>
+                  {i===0 && <td rowSpan={4} style={{padding:'12px 16px', fontWeight:300, color:'#9ca3af', verticalAlign:'top', paddingTop:20}}>{r.quarter}</td>}
+                  <td style={{...tdStyle, fontWeight:500}}><Ed readOnly={ro}>{r.region}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.register}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.ftd}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.nd}</Ed></td>
+                  <td style={tdRight}><Ed readOnly={ro}>{r.tv}</Ed></td>
+                  <td style={{...roiStyle, color:'#f87171'}}><Ed readOnly={ro}>{r.roi}</Ed></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style={{position:'absolute', bottom:16, right:24, color:'#6b7280', fontWeight:500, letterSpacing:'0.1em', fontSize:12}}>{data.id}/{count}</div>
+    </div>
+  );
+}
+
+function DashboardSection({editMode}) {
+  const wrapRef = useRef(null);
+  useEffect(() => {
+    if (!wrapRef.current) return;
+    const pages = wrapRef.current.querySelectorAll('.dash-page');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+    }, {rootMargin:'0px 0px -10% 0px', threshold:0.15});
+    pages.forEach(p => obs.observe(p));
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={wrapRef} style={{position:'relative', background:'#0a0000', overflow:'hidden'}}>
+      {/* V-light rays */}
+      <div style={{position:'fixed', inset:0, pointerEvents:'none', zIndex:0, overflow:'hidden', mixBlendMode:'screen', opacity:0.8}}>
+        <div style={{position:'absolute', top:'-10%', right:'35%', width:150, height:'150vh', background:'linear-gradient(to bottom, rgba(239,68,68,0.5), rgba(127,29,29,0.2), transparent)', transform:'rotate(35deg)', transformOrigin:'top', filter:'blur(24px)'}}/>
+        <div style={{position:'absolute', top:'-5%', right:'20%', width:200, height:'150vh', background:'linear-gradient(to bottom, rgba(248,113,113,0.4), rgba(127,29,29,0.1), transparent)', transform:'rotate(45deg)', transformOrigin:'top', filter:'blur(36px)'}}/>
+        <div style={{position:'absolute', top:'5%', right:'10%', width:100, height:'150vh', background:'linear-gradient(to bottom, rgba(252,165,165,0.2), transparent)', transform:'rotate(55deg)', transformOrigin:'top', filter:'blur(36px)'}}/>
+        <div style={{position:'absolute', top:'-10%', right:'35%', width:150, height:'150vh', background:'linear-gradient(to bottom, rgba(239,68,68,0.4), rgba(127,29,29,0.2), transparent)', transform:'rotate(-25deg)', transformOrigin:'top', filter:'blur(24px)'}}/>
+      </div>
+      {/* Decorative V */}
+      <div style={{position:'fixed', top:10, right:10, fontSize:250, fontWeight:900, color:'rgba(220,38,38,0.1)', lineHeight:1, userSelect:'none', zIndex:0, fontStyle:'italic', mixBlendMode:'screen', pointerEvents:'none', filter:'drop-shadow(0 0 15px rgba(220,38,38,0.2))'}}>V</div>
+      <div style={{position:'relative', zIndex:10, width:'100%'}}>
+        {DASHBOARDS.map((board) => {
+          if (board.layoutType === 'profit') {
+            return <div key={board.id} className="dash-page"><ProfitSection data={board} count={DASHBOARDS.length} editMode={editMode}/></div>;
+          }
+          if (board.layoutType === 'region_table') {
+            return <div key={board.id} className="dash-page"><RegionTableSection data={board} count={DASHBOARDS.length} editMode={editMode}/></div>;
+          }
+          return <div key={board.id} className="dash-page"><DashboardCard data={board} count={DASHBOARDS.length} editMode={editMode}/></div>;
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ═══ Prism (play once then freeze — zero continuous rendering) ═══
 function Prism({height=3.5,baseWidth=5.5,animationType='rotate',glow=1,offset={x:0,y:0},noise=0.5,transparent=true,scale=3.6,hueShift=0,colorFrequency=1,hoverStrength=2,inertia=0.05,bloom=1,timeScale=0.5,playDuration=6}){
@@ -499,7 +863,7 @@ function SaveBar({editMode,onToggleEdit,onRequestExit}){
 function getInitialData(){return{
   title:'全球营销团队 Q1 OKR 复盘',titleEn:'Global Marketing Team · Q1 OKR Review',
   subtitle:'2026 年度第一季度回顾与策略复盘',subtitleEn:'2026 First Quarter Review & Strategy Recap',
-  date:'2026.04.14',nextReview:'2026.07.10',
+  date:'2026.04.30',nextReview:'2026.07.10',
   statusLegend:[
     {color:'#E8585A',label:'On Track',desc:'进度符合计划'},
     {color:'#fbbf24',label:'At Risk',desc:'进度滞后，已有缓解方案'},
@@ -521,136 +885,73 @@ function getInitialData(){return{
     {label:'合规审计',labelEn:'Compliance Audit',value:'0',sub:'重大发现',subEn:'Major Findings',icon:'shield',good:true},
   ],
   objectives:[
-    // ═══ O1: Brand Building ═══
-    {id:'o1',status:'At Risk',statusEn:'At Risk',statusColor:'#fbbf24',
-      title:'提升 Vantage 全球影响力与品牌一致性',titleEn:'Build Vantage into a Global Top-Tier Brand',
-      subtitle:'品牌视觉 · KOL 网络 · 品牌生态',subtitleEn:'Brand Visual · KOL Network · Brand Ecosystem',
-      krs:[
-        {id:'kr1.1',code:'KR 1.1',
-          title:'打造全球统一的品牌视觉与叙事，提升核心市场品牌意识',titleEn:'Build Global Brand Awareness & Preference (Focus on Tier 1 Markets)',
-          tags:['Brand & Creative','VIS v2.0','UK','AU','DE'],
-          summary:'VIS v2.0 完成 80%，「Next Level Trading」活动延迟 2 周上线，Q1 触达 512K（目标 600K）',summaryEn:'VIS v2.0 80% done, "Next Level Trading" launched 2 weeks late, Q1 reach 512K (target 600K)',
-          result:'全球品牌标识系统（VIS）v2.0 已完成并推广至 80% 区域团队。「Next Level Trading」品牌活动在英国/澳洲上线（延迟 2 周）。Q1 实际触达 512,430 月活用户（目标 600K，达成率 85.4%）。英国品牌知名度调查 18%（目标 20%）。',
-          resultEn:'Global Brand Identity System (VIS) v2.0 complete and rolled out to 80% of regional teams. "Next Level Trading" campaign launched in UK/AU (2 weeks behind schedule). Actual Q1 reach: 512,430 MAU (85.4% of 600K target). UK brand awareness survey: 18% (target 20%).',
-          annual:['全球月活用户达 300 万','核心 Tier 1 市场（UK/AU/DE）品牌知名度达 25%','品牌偏好/考虑度提升 15%'],annualEn:['Reach 3M monthly active users globally','Brand awareness in Tier 1 markets (UK/AU/DE) to reach 25%','Brand preference/consideration +15%'],
-          metrics:[{label:'Q1 触达（实际）',labelEn:'Q1 Reach (Actual)',value:'512,430',sub:'目标 600K',subEn:'Target 600K',icon:'users'},{label:'达成率',labelEn:'Achievement',value:'85.4%',icon:'chart'},{label:'UK 品牌知名度',labelEn:'UK Awareness',value:'18%',target:'20%',icon:'trend'},{label:'VIS v2.0 推广',labelEn:'VIS v2.0 Rollout',value:'80%',icon:'shield'}],
-          status:'🟡',owner:'Jeff / Brand Team',
-          improvement:'UK 法律审批瓶颈导致活动延迟。德国市场素材需更多本地化。社交媒体互动率低于基准（实际 1.2% vs 目标 2.5%）。',improvementEn:'Campaign launch delay due to legal approval bottlenecks in UK. German market assets require more localization. Social media engagement rate lower than benchmark (1.2% actual vs 2.5% target).'},
-        {id:'kr1.2',code:'KR 1.2',
-          title:'提升全球社交媒体与 KOL 领域的行业领导地位',titleEn:'Establish Global Thought Leadership & KOL Network',
-          tags:['Social Media','PR','KOL','Webinar','TikTok'],
-          summary:'粉丝 +168.5K（超目标 112%），12 个 KOL 签约，TikTok 东南亚 +40% MoM',summaryEn:'Followers +168.5K (112% of target), 12 KOLs onboarded, TikTok SEA +40% MoM',
-          result:'全球社交媒体粉丝增长 168,500（目标 150K，达成 112%）。12 个 Tier-1 KOL 新签约（聚焦拉美和东南亚）。2 场全球网络研讨会完成，总参与 4,500+。TikTok 东南亚频道环比增长 40%。',
-          resultEn:'Total followers increased by 168,500 (112% of 150K target). 12 new Tier-1 KOLs onboarded (Focus: LATAM and SEA). 2 global webinars completed; total attendance 4,500+. TikTok SEA channel saw 40% MoM growth.',
-          annual:['全球粉丝达 150 万','签约 50+ 顶级金融 KOL','全平台平均互动率 3.5%'],annualEn:['Global social following to reach 1.5M','Establish partnerships with 50+ top-tier financial KOLs','Average engagement rate 3.5% across platforms'],
-          metrics:[{label:'粉丝增长（实际）',labelEn:'Follower Growth',value:'168,500',sub:'目标 150K',subEn:'Target 150K',good:true,icon:'users',accent:true},{label:'达成率',labelEn:'Achievement',value:'112%',good:true,icon:'chart'},{label:'新 KOL 签约',labelEn:'New KOLs',value:'12',sub:'目标 10',subEn:'Target 10',good:true,icon:'star'},{label:'研讨会参与',labelEn:'Webinar Attendance',value:'4,500+',good:true,icon:'globe'},{label:'TikTok SEA 增长',labelEn:'TikTok SEA',value:'+40% MoM',good:true,icon:'trend'}],
-          status:'🟢',owner:'Sarah / Social Team',
-          improvement:'Twitter（X）在西方市场表现停滞，需新内容策略。LinkedIn 专业内容在获客方面表现好但需更高频率。',improvementEn:'Twitter (X) performance plateauing in Western markets; need new content strategy. LinkedIn professional content performing well for lead gen but needs higher frequency.'},
-        {id:'kr1.3',code:'KR 1.3',
-          title:'建立全面的品牌生态系统',titleEn:'Build a Comprehensive Brand Ecosystem',
-          tags:['Vantage Rewards','McLaren','Fintech','Partnerships'],
-          summary:'Rewards 技术蓝图 100% 完成，McLaren 续约，3/5 金融科技合作签约',summaryEn:'Rewards blueprint 100% complete, McLaren extended, 3/5 fintech partnerships signed',
-          result:'「Vantage Rewards」忠诚度计划技术蓝图 100% 完成，Beta 测试定于 Q2。McLaren 合作续约并获得额外激活资源。3/5 金融科技合作签约（TradingView、MetaTrader 更新、东南亚本地钱包）。',
-          resultEn:'"Vantage Rewards" loyalty program technical blueprint 100% complete; Beta testing scheduled for Q2. McLaren partnership extended with additional activation slots secured. 3 out of 5 fintech partnerships signed (TradingView, MetaTrader updates, SEA local wallet).',
-          annual:['全球推出「Vantage Rewards」忠诚度计划','赞助 2 场全球体育赛事','品牌生态收入贡献达 15%'],annualEn:['Launch "Vantage Rewards" loyalty program globally','Sponsorship of 2 major global sporting events','Brand ecosystem revenue contribution to reach 15%'],
-          metrics:[{label:'Rewards 蓝图',labelEn:'Rewards Blueprint',value:'100%',good:true,icon:'check',accent:true},{label:'McLaren 续约',labelEn:'McLaren Extended',value:'完成',valueEn:'Done',good:true,icon:'zap'},{label:'金融科技合作',labelEn:'Fintech Partners',value:'3/5',icon:'link'}],
-          status:'🟢',owner:'Mike / Partnerships',
-          improvement:'新兴市场（拉美/非洲）需要更多本地化奖励。移动端奖励追踪集成落后于桌面版。',improvementEn:'Need more localized rewards for emerging markets (LATAM/Africa). Mobile app rewards tracking integration behind desktop version.'},
+    {id:'o1',status:'On Track',statusEn:'On Track',statusColor:'#E8585A',title:'将Vantage建设成全球一线品牌',subtitle:'组织架构 · 慈善领军 · 品牌生态',description:'Brand Search x5、FTD 50%、ND&TV 40%。KR1重塑组织架构；KR2慈善领军；KR3品牌生态。',krs:[
+      {id:'kr1.1',code:'KR 1',title:'重塑组织架构以适应最新目标，提高产出质量、效率',items:[
+        {id:'item1.1.1',title:'Social Momentum team（社交声量与热度小组）',details:'基于营销日历的造势\n日常方法论探索\n事件营销方法论探索',metrics:'Social media mentions ×10\nEngagement rate ≥ 2%\nShare Rate × 3\n≥2 viral campaigns',owner:'@Lyn Chang\n@Eira Li',image:['okr-images/asynccode-20.png'],results:'由0-1搭建团队，并临时组建BIT顾问团队\nA级全案落地3场\n总曝光量约2,426,461次\n总互动量约36,312次，平均互动率约1.52%',rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item1.1.2',title:'Value Proposition team（品牌价值主张小组）',details:'品牌升级\n品牌差异化策略\n品牌故事与叙事',metrics:'Brand perception score +20%\nBrand differentiation index top 3\nBrand story reach 1M+',owner:'@Yuki Tan\n@Jess Wang',image:null,results:'完成品牌升级全案，确立VTG No.1策略方向\n品牌视觉体系2.0落地\n品牌故事框架搭建完成',success:'品牌升级项目按时交付，VTG No.1策略获管理层认可',rating:null,problems:null,improvement:null,quarterly:null},
+        {id:'item1.1.3',title:'Delivery & Solutions team（交付与解决方案小组）',details:'创意制作与交付\n跨部门协作流程\n质量管控体系',metrics:'Delivery on-time rate ≥ 95%\nInternal satisfaction ≥ 4.5/5\nRework rate < 5%',owner:'@Ken Liu\n@Amy Zhou',image:['okr-images/asynccode-25.png','okr-images/asynccode-26.png'],results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item1.1.4',title:'CMO Office（CMO办公室）',details:'战略规划与协调\n预算管理\n跨团队资源调配',metrics:'Strategy alignment score ≥ 90%\nBudget utilization rate 95-100%\nCross-team project completion rate ≥ 90%',owner:'@Julian Shi',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null}
       ]},
-    // ═══ O2: Growth & Efficiency (4 KRs) ═══
-    {id:'o2',status:'On Track',statusEn:'On Track',statusColor:'#E8585A',
-      title:'注重增长质量，通过精细化运营提升全渠道获客效率',titleEn:'Drive Growth Quality — Precision Operations for Full-Funnel Acquisition Efficiency',
-      subtitle:'Ads 精细化 · 曝光基建 · 数据基础 · 用户运营',subtitleEn:'Ads Precision · Visibility Infrastructure · Data Foundation · User Operations',
-      krs:[
-        {id:'kr2.1',code:'KR 2.1',
-          title:'加强 Ads 的数据化、精细化管理，提高广告投放效果',titleEn:'Strengthen Data-Driven and Granular Ads Management to Improve Ad Performance',
-          tags:['预算监控','ROI 监控','LTV/CAC','Campaign CAC','落地页转化'],
-          summary:'5 大 Subject 全面推进：预算监控、重点国家 ROI、渠道 LTV/CAC、素材级 CAC、Web 落地页转化率',summaryEn:'5 Subjects advanced: budget monitoring, regional ROI, channel LTV/CAC, creative-level CAC, web landing page CR',
-          result:'广告投放数据化管理体系建立。预算实时监控系统上线。重点国家（SEA/MENA/LATAM）ROI 监控看板完成。按获取渠道的 LTV/CAC 监控体系搭建。Campaign 素材级别 CAC 追踪实现。Web 落地页转化率优化启动。',
-          resultEn:'Data-driven ads management system established. Real-time budget monitoring live. Regional ROI dashboards (SEA/MENA/LATAM) completed. Channel-level LTV/CAC monitoring built. Creative-level CAC tracking implemented. Web landing page conversion optimization launched.',
-          annual:['预算监控覆盖率 100%','重点国家 ROI 看板实时化','渠道 LTV/CAC 建模','素材级 CAC 归因','Web 落地页转化率提升 15%'],annualEn:['100% budget monitoring coverage','Real-time regional ROI dashboards','Channel LTV/CAC modeling','Creative-level CAC attribution','Web landing page CR +15%'],
-          metrics:[{label:'预算监控',labelEn:'Budget Monitoring',value:'已上线',valueEn:'Live',good:true,icon:'dollar',accent:true},{label:'ROI 看板',labelEn:'ROI Dashboard',value:'已完成',valueEn:'Done',good:true,icon:'chart'},{label:'素材级 CAC',labelEn:'Creative CAC',value:'已实现',valueEn:'Implemented',good:true,icon:'search'},{label:'落地页转化优化',labelEn:'Landing Page CR',value:'启动中',valueEn:'In Progress',icon:'trend'}],
-          owner:'Growth / Performance Team',
-          improvement:'部分渠道的 LTV 数据回传延迟，影响实时决策。落地页 A/B 测试基础设施需完善。',improvementEn:'LTV data feed delays in some channels affecting real-time decisions. Landing page A/B testing infrastructure needs improvement.'},
-        {id:'kr2.2',code:'KR 2.2',
-          title:'加强「曝光基建」，通过 SEO、ASO、GEO 全面提高自然曝光能力',titleEn:'Strengthen Visibility Infrastructure via SEO, ASO, GEO to Improve Organic Exposure',
-          tags:['SEO','ASO','GEO','品牌声誉','评分评论'],
-          summary:'4 大 Subject：SEO 基础加强、ASO 评分评论体系、GEO 高频搜索内容、品牌声誉强化',summaryEn:'4 Subjects: SEO foundation, ASO rating/review system, GEO high-frequency search content, brand reputation',
-          result:'SEO 基础架构审计完成并启动优化。ASO 评分和评论体系建立，App Store 评分提升至 4.3。GEO 高频搜索内容策略制定并开始产出。品牌声誉监控和强化计划启动。',
-          resultEn:'SEO infrastructure audit completed and optimization launched. ASO rating and review system established; App Store rating improved to 4.3. GEO high-frequency search content strategy defined and production started. Brand reputation monitoring and enhancement plan initiated.',
-          annual:['SEO 基础架构全面升级','ASO 评分 >4.5','GEO 内容覆盖 Top 100 高频搜索','品牌声誉正向提及 +30%'],annualEn:['Full SEO infrastructure upgrade','ASO rating >4.5','GEO content covering Top 100 high-frequency searches','Positive brand mentions +30%'],
-          metrics:[{label:'SEO 审计',labelEn:'SEO Audit',value:'已完成',valueEn:'Done',good:true,icon:'search',accent:true},{label:'App Store 评分',labelEn:'App Store Rating',value:'4.3',target:'>4.5',icon:'star'},{label:'GEO 内容产出',labelEn:'GEO Content',value:'启动中',valueEn:'In Progress',icon:'globe'},{label:'品牌声誉监控',labelEn:'Brand Reputation',value:'已启动',valueEn:'Initiated',good:true,icon:'shield'}],
-          owner:'SEO / ASO / Content Team',
-          improvement:'GEO 内容产出速度需加快。ASO 评论体系在部分市场用户参与度低。',improvementEn:'GEO content production speed needs to accelerate. ASO review system has low user participation in some markets.'},
-        {id:'kr2.3',code:'KR 2.3',
-          title:'加强整体数据基础设施建设，尤其是外部和第三方数据系统',titleEn:'Strengthen Overall Data Infrastructure, Especially External and Third-Party Data Systems',
-          tags:['市场数据','数据基础设施','第三方系统','数据集成'],
-          summary:'市场数据 Subject：外部数据源接入、第三方数据系统整合、数据质量提升',summaryEn:'Market Data Subject: external data source integration, third-party system consolidation, data quality improvement',
-          result:'外部市场数据源接入方案确定并启动实施。第三方数据系统整合路线图制定。数据质量评估框架建立。',
-          resultEn:'External market data source integration plan defined and implementation started. Third-party data system consolidation roadmap created. Data quality assessment framework established.',
-          annual:['接入 3+ 外部市场数据源','第三方数据系统 100% 整合','数据质量评分 >90%'],annualEn:['Integrate 3+ external market data sources','100% third-party data system consolidation','Data quality score >90%'],
-          metrics:[{label:'外部数据源',labelEn:'External Sources',value:'方案确定',valueEn:'Plan Defined',icon:'link',accent:true},{label:'系统整合路线图',labelEn:'Integration Roadmap',value:'已完成',valueEn:'Done',good:true,icon:'chart'},{label:'数据质量框架',labelEn:'Data Quality Framework',value:'已建立',valueEn:'Established',good:true,icon:'shield'}],
-          owner:'Data / Tech Team',
-          improvement:'部分第三方 API 接口文档不完整，影响集成进度。数据标准化工作量比预期大。',improvementEn:'Some third-party API documentation incomplete, affecting integration progress. Data standardization effort larger than expected.'},
-        {id:'kr2.4',code:'KR 2.4',
-          title:'加强系统化用户运营能力，全面提升用户转化与 LTV',titleEn:'Strengthen Systematic User Operations to Comprehensively Improve User Conversion & LTV',
-          tags:['新用户转化','用户触点','生命周期','活动系统','Mega 活动','长期增长'],
-          summary:'6 大 Subject 全面推进：新用户转化、用户触点系统、生命周期运营、活动系统、Mega 活动、长期增长系统',summaryEn:'6 Subjects: new user conversion, touchpoint system, lifecycle ops, event system, mega events, long-term growth',
-          result:'新用户转化流程优化启动。用户触点系统（全渠道触达）架构设计完成。用户生命周期运营模型搭建。高效活动系统开发中。Q1 Mega 活动策划完成。长期增长系统框架定义。',
-          resultEn:'New user conversion flow optimization initiated. User touchpoint system (omnichannel reach) architecture completed. User lifecycle operations model built. Efficient event system in development. Q1 Mega event planning completed. Long-term growth system framework defined.',
-          annual:['新用户首存转化率提升 20%','全渠道触点系统上线','用户生命周期模型覆盖 100%','Mega 活动年举办 4+ 场','长期增长系统 MVP 上线'],annualEn:['New user first deposit CR +20%','Omnichannel touchpoint system live','100% user lifecycle model coverage','4+ Mega events per year','Long-term growth system MVP live'],
-          metrics:[{label:'新用户转化优化',labelEn:'New User Conversion',value:'启动中',valueEn:'In Progress',icon:'users',accent:true},{label:'触点系统架构',labelEn:'Touchpoint Architecture',value:'已完成',valueEn:'Done',good:true,icon:'link'},{label:'生命周期模型',labelEn:'Lifecycle Model',value:'搭建中',valueEn:'Building',icon:'refresh'},{label:'Mega 活动策划',labelEn:'Mega Event Plan',value:'已完成',valueEn:'Done',good:true,icon:'target'}],
-          owner:'CRM / User Operations Team',
-          improvement:'用户触点系统与现有 CRM 的集成复杂度高。Mega 活动的跨区域协调需要更清晰的 SOP。',improvementEn:'User touchpoint system integration with existing CRM is complex. Mega event cross-regional coordination needs clearer SOP.'},
+      {id:'kr1.2',code:'KR 2',title:'慈善领军，通过公益合作提升品牌社会影响力',items:[
+        {id:'item1.2.1',title:'联合国/NGO合作',details:'与联合国机构建立合作关系\nNGO公益项目联合推广\n品牌CSR战略落地',metrics:'NGO partnerships ≥ 3\nCSR campaign reach 500K+\nMedia coverage 50+ articles',owner:'@Julian Shi\n@Lyn Chang',image:null,results:'成功与2家NGO建立合作框架\nCSR战略白皮书完成\n首个公益项目启动筹备',success:'NGO合作谈判顺利，获得联合国相关机构初步认可',problems:null,improvement:null,quarterly:'Q1: NGO合作框架签署\nQ2: 首个公益项目落地\nQ3: 扩大合作范围至3家\nQ4: 年度CSR报告发布'},
+        {id:'item1.2.2',title:'现象级事件',details:'策划高影响力公益事件\n联合UNHCR难民主题世界杯\n社交媒体病毒式传播',metrics:'Event reach 2M+\nMedia impressions 5M+\nSocial shares 100K+',owner:'@Lyn Chang\n@Eira Li',image:null,results:'UNHCR难民主题世界杯方案完成\n事件营销SOP建立\n媒体资源库搭建',rating:null,success:null,problems:null,improvement:null,quarterly:'Q1: 方案策划与资源准备\nQ2: UNHCR世界杯事件执行\nQ3: 第二场现象级事件\nQ4: 年度事件营销复盘'}
       ]},
-    // ═══ O3: Regional Breakthroughs ═══
-    {id:'o3',status:'At Risk',statusEn:'At Risk',statusColor:'#fbbf24',
-      title:'在关键区域实现破局与增长，确立市场领导地位',titleEn:'Achieve Real Breakthroughs in Key Regions; Establish Industry Leader Position',
-      subtitle:'东南亚/拉美市场份额 · 合规与本地化',subtitleEn:'SEA/LATAM Market Share · Compliance & Localization',
-      krs:[
-        {id:'kr3.1',code:'KR 3.1',
-          title:'在核心市场（SEA/LATAM）实现显著的市场份额增长',titleEn:'Significantly Increase Market Share in SEA/LATAM',
-          tags:['Vietnam','Thailand','Brazil','Mexico','NPS'],
-          summary:'越南份额 +2.4%，墨西哥活动首月 15K 注册，LATAM 入金 +25% QoQ',summaryEn:'Vietnam share +2.4%, Mexico campaign 15K registrations month 1, LATAM deposits +25% QoQ',
-          result:'越南市场份额增长 2.4%。墨西哥「Trading para Todos」活动按时上线，首月 15,000 新注册。东南亚客户满意度 92%（目标 >90%）。拉美入金量环比增长 25%。',
-          resultEn:'Vietnam market share increased by 2.4%. Mexico "Trading para Todos" campaign launched on time; 15,000 new registrations in month 1. SEA customer support satisfaction at 92% (target >90%). LATAM deposit volume grew by 25% QoQ.',
-          annual:['越南和泰国市场份额达 #1','巴西和墨西哥成为 Top 3 经纪商','区域平均 NPS 达 60+'],annualEn:['Achieve #1 market share in Vietnam and Thailand','Establish Vantage as Top 3 broker in Brazil and Mexico','Average regional NPS of 60+'],
-          metrics:[{label:'越南份额增长',labelEn:'Vietnam Share',value:'+2.4%',good:true,icon:'chart',accent:true},{label:'墨西哥新注册',labelEn:'Mexico Registrations',value:'15,000',sub:'首月',subEn:'Month 1',good:true,icon:'users'},{label:'东南亚满意度',labelEn:'SEA Satisfaction',value:'92%',target:'>90%',good:true,icon:'heart'},{label:'拉美入金增长',labelEn:'LATAM Deposits',value:'+25% QoQ',good:true,icon:'trend'}],
-          status:'🟢',owner:'Lin / Carlos (Regional Leads)',
-          improvement:'巴西本地支付网关集成缓慢导致用户流失。墨西哥需要更多西班牙语客户经理处理线索量。',improvementEn:'Local payment gateway integration in Brazil is slow, causing drop-offs. Need more Spanish-speaking account managers to handle lead volume in Mexico.'},
-        {id:'kr3.2',code:'KR 3.2',
-          title:'强化合规与本地化，支撑业务全球化扩张',titleEn:'Strengthen Compliance and Localization to Support Global Expansion',
-          tags:['Compliance','Localization','License','Arabic','Japanese','RTL'],
-          summary:'日语本地化 100% 完成，阿拉伯语因 RTL 问题延迟至 Q2，合规审计 0 重大发现',summaryEn:'Japanese localization 100% done, Arabic delayed to Q2 (RTL issues), compliance audit 0 major findings',
-          result:'新 Tier-1 牌照申请已提交（状态：审核中）。日语 UI/UX 本地化 100% 完成。阿拉伯语本地化因复杂 RTL（从右到左）格式问题延迟至 Q2。合规审计结果：0 重大发现，2 个 minor advisory（已解决）。',
-          resultEn:'New Tier-1 license application submitted (Status: Pending). Japanese UI/UX localization 100% complete. Arabic localization delayed to Q2 due to complex RTL (Right-to-Left) formatting issues. Compliance audit: 0 major findings, 2 minor advisories (resolved).',
-          annual:['获取 2 个新 Tier-1 监管牌照','所有活跃市场 100% 合规','Top 15 市场完成全面本地化（产品+内容）'],annualEn:['Obtain 2 new major Tier-1 regulatory licenses','100% compliance with local marketing regulations across all active markets','Full localization for top 15 markets'],
-          metrics:[{label:'牌照申请',labelEn:'License Application',value:'已提交',valueEn:'Submitted',icon:'shield',accent:true},{label:'日语本地化',labelEn:'Japanese L10n',value:'100%',good:true,icon:'check'},{label:'阿拉伯语本地化',labelEn:'Arabic L10n',value:'延迟至 Q2',valueEn:'Delayed to Q2',icon:'globe'},{label:'合规审计',labelEn:'Compliance Audit',value:'0 重大发现',valueEn:'0 Major Findings',good:true,icon:'shield'}],
-          status:'🟡',owner:'Anna / Ops',
-          improvement:'App 框架中 RTL 技术支持比预估更复杂。需要招聘专业 RTL QA 测试人员。',improvementEn:'RTL technical support within the app framework is more complex than estimated. Need to hire specialized RTL QA testers.'},
+      {id:'kr1.3',code:'KR 3',title:'品牌生态建设，构建多维度品牌触点',items:[
+        {id:'item1.3.1',title:'周边Merchandising',details:'品牌周边产品开发\nSOP流程建立\n产品线规划与量产',metrics:'SKU count ≥ 12\nProduct lines ≥ 3\nR&D projects ≥ 5',owner:'@Yuki Tan\n@Ken Liu',image:null,results:'完成周边产品SOP流程\n累计开发6890件产品\n12个SKU上线\n5个研发项目推进中',rating:null,success:null,problems:null,improvement:null,quarterly:null,products:[{title:'德州扑克-盖茨比款',series:'盖茨比系列',image:'okr-images/merch/德州.png',sampleDate:'6月底',massDate:'7月大货',id:'TX-SPEC-V2'},{title:'德州扑克-基础款',series:'基础系列',image:'okr-images/merch/德州基础.png',sampleDate:'6月中',massDate:'6月底',id:'TX-BASE-V1'},{title:'麻将-盖茨比款',series:'盖茨比系列',image:'okr-images/merch/麻将.png',sampleDate:'6月底',massDate:'7月大货',id:'MJ-SPEC-V2'},{title:'麻将-基础款',series:'基础系列',image:'okr-images/merch/麻将基础.png',sampleDate:'6月中',massDate:'6月底',id:'MJ-BASE-V1'},{title:'扑克牌-盖茨比款',series:'盖茨比系列',image:'okr-images/merch/扑克.png',sampleDate:'6月底',massDate:'7月大货',id:'PK-SPEC-V2'},{title:'扑克牌-基础款',series:'基础系列',image:'okr-images/merch/扑克基础.png',sampleDate:'6月中',massDate:'6月底',id:'PK-BASE-V1'},{title:'飞行棋-盖茨比款',series:'盖茨比系列',image:'okr-images/merch/飞行棋.png',sampleDate:'7月中',massDate:'8月大货',id:'FC-SPEC-V1'},{title:'国际象棋-盖茨比款',series:'盖茨比系列',image:'okr-images/merch/象棋.png',sampleDate:'7月中',massDate:'8月大货',id:'CS-SPEC-V1'},{title:'品牌礼盒套装',series:'礼盒系列',image:'okr-images/merch/礼盒.png',sampleDate:'7月底',massDate:'8月大货',id:'GF-BOX-V1'}]},
+        {id:'item1.3.2',title:'赞助',details:'Ferrari赞助7大场景激活\nUAE赞助合作\n全球体育赛事赞助',metrics:'Sponsorship activations ≥ 7\nBrand exposure 10M+\nLead generation 5K+',owner:'@Julian Shi\n@Mike Chen',image:null,results:'Ferrari 7大场景激活方案落地\nUAE赞助合作签约\n赞助ROI追踪体系建立',success:'Ferrari合作深化，7个场景全部激活\nUAE赞助获得当地政府支持',problems:'部分赞助场景执行周期长，影响即时效果评估',improvement:'建立赞助效果实时监控看板\n优化赞助场景优先级排序',quarterly:'Q1: Ferrari场景激活+UAE签约\nQ2: 赛事赞助扩展\nQ3: 赞助效果中期评估\nQ4: 年度赞助策略复盘'},
+        {id:'item1.3.3',title:'Offline（线下活动）',details:'越南3场沙龙活动\n线下活动SOP\n客户深度互动',metrics:'Events ≥ 3\nTotal attendees ≥ 100\nConversion rate ≥ 15%',owner:'@Lin Nguyen\n@Amy Zhou',image:null,results:'越南成功举办3场沙龙\n累计120位参与者\n活动SOP文档完成',success:'越南沙龙活动反响热烈，客户参与度超预期',problems:null,improvement:'扩大线下活动覆盖城市\n增加活动后续跟进机制',quarterly:null},
+        {id:'item1.3.4',title:'公关PR',details:'媒体关系维护\n新闻稿发布\n行业媒体合作',metrics:'Media contacts ≥ 50\nArticles published ≥ 20\nDirect publish ≥ 40',owner:'@Jess Wang\n@Eira Li',image:null,results:'67家媒体建立合作关系\n21篇深度文章发布\n48篇直发稿件',rating:'0.6',success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item1.3.5',title:'KOL',details:'KOL资源库建设\n合作内容产出\n效果追踪与优化',metrics:'KOL pool ≥ 1000\nCollaborations ≥ 50\nTotal impressions 1M+',owner:'@Lyn Chang\n@Eira Li',image:null,results:'1500位KOL入库\n80次合作完成\n183篇内容发布\n总曝光量177万次',rating:null,success:null,problems:null,improvement:null,quarterly:null}
+      ]}
+    ]},
+    {id:'o2',status:'On Track',statusEn:'On Track',statusColor:'#E8585A',title:'注重增长质量，通过精细化运营提升全渠道获客效率',subtitle:'Ads精细化 · 曝光基建 · 竞品情报 · 用户运营',description:'聚焦广告精细化管理、自然曝光基建、竞品情报体系、用户全生命周期运营四大方向。',krs:[
+      {id:'kr2.1',code:'KR 1',title:'加强Ads的数据化、精细化管理，提高广告投放效果',items:[
+        {id:'item2.1.1',title:'预算监控',details:'实时预算监控系统\n预算分配优化\n异常预警机制',metrics:'Budget monitoring coverage 100%\nBudget utilization 95-100%\nAlert response time < 1h',owner:'@Growth Team',image:null,results:'预算实时监控系统上线\n覆盖率达100%\n异常预警机制建立',success:'系统稳定运行，预算利用率提升至97%',problems:'部分渠道数据回传延迟',improvement:'优化数据回传链路，缩短延迟至15分钟内',rating:'0.7'},
+        {id:'item2.1.2',title:'ROI监控',details:'重点国家ROI看板\n渠道ROI对比分析\n实时决策支持',metrics:'ROI dashboard coverage ≥ 10 countries\nData refresh frequency ≤ 1h\nDecision turnaround < 24h',owner:'@Growth Team\n@Data Team',image:null,results:'重点国家ROI监控看板完成\n覆盖SEA/MENA/LATAM\n实时数据刷新',success:'ROI看板帮助优化投放策略，整体ROI提升12%',problems:'部分小市场数据样本量不足',improvement:'引入贝叶斯估计处理小样本市场',rating:'0.8'},
+        {id:'item2.1.3',title:'LTV/CAC监控',details:'按渠道LTV/CAC建模\n用户质量评估\n长期价值预测',metrics:'LTV/CAC model coverage ≥ 80% channels\nPrediction accuracy ≥ 85%\nModel update frequency weekly',owner:'@Data Team',image:null,results:'LTV/CAC监控体系搭建完成\n覆盖主要获客渠道\n预测模型准确率82%',success:'模型帮助识别高价值渠道，优化预算分配',problems:'新渠道历史数据不足影响模型准确性',improvement:'建立新渠道快速评估框架',rating:'0.8'},
+        {id:'item2.1.4',title:'Campaign CAC监控',details:'素材级别CAC追踪\n创意效果归因\nA/B测试体系',metrics:'Creative-level CAC tracking 100%\nA/B test velocity ≥ 20/month\nWinning creative identification < 48h',owner:'@Growth Team\n@Creative Team',image:null,results:'素材级CAC追踪实现\nA/B测试体系建立\n月均测试15组',success:'识别出3组高效素材模板',problems:'测试速度未达目标，受限于素材产能',improvement:'引入AI辅助素材生成提升产能',rating:'0.6'},
+        {id:'item2.1.5',title:'Web落地页',details:'落地页转化率优化\n多变体测试\n用户行为分析',metrics:'Landing page CR +15%\nTest variants ≥ 10/month\nBounce rate reduction ≥ 10%',owner:'@Growth Team\n@UX Team',image:null,results:'落地页优化项目启动\n首批3个页面完成改版\n转化率提升8%',success:'核心落地页转化率显著提升',problems:'A/B测试基础设施需完善',improvement:'部署专业A/B测试平台',rating:'0.6'}
       ]},
+      {id:'kr2.2',code:'KR 2',title:'加强「曝光基建」，通过SEO、ASO、GEO全面提高自然曝光能力',items:[
+        {id:'item2.2.1',title:'SEO',details:'SEO基础架构审计\n内容优化策略\n技术SEO提升',metrics:'Organic traffic +30%\nTop 10 keywords +50\nPage load speed < 2s',owner:'@SEO Team',image:null,results:'SEO基础架构审计完成\n优化方案启动实施\n技术SEO问题修复80%',success:'核心关键词排名提升，自然流量增长18%',problems:'Google算法更新影响部分页面排名',improvement:'建立算法更新快速响应机制',rating:null},
+        {id:'item2.2.2',title:'ASO',details:'App Store评分优化\n评论管理体系\n关键词优化',metrics:'App Store rating ≥ 4.5\nReview response rate 100%\nKeyword ranking top 10 ≥ 30',owner:'@ASO Team',image:null,results:'ASO评分提升至4.3\n评论管理体系建立\n关键词覆盖扩大',success:'评分从4.0提升至4.3',problems:'部分市场用户评论参与度低',improvement:'设计激励机制提升用户评论意愿',rating:'0.7'},
+        {id:'item2.2.3',title:'GEO',details:'高频搜索内容策略\n地域化内容产出\n本地化SEO',metrics:'GEO content pieces ≥ 100\nLocal search visibility +40%\nContent production velocity 20/week',owner:'@Content Team',image:null,results:'GEO内容策略制定完成\n首批内容产出启动\n覆盖Top 50高频搜索',success:null,problems:null,improvement:null,rating:null},
+        {id:'item2.2.4',title:'品牌reputation',details:'品牌声誉监控\n负面舆情处理\n正向内容建设',metrics:'Positive mention ratio ≥ 80%\nNegative response time < 2h\nBrand sentiment score +15%',owner:'@PR Team\n@Content Team',image:null,results:'品牌声誉监控系统上线\n舆情处理SOP建立\n正向内容产出计划启动',success:'舆情响应速度提升，负面事件处理效率提高',problems:'监控工具覆盖语言有限',improvement:'扩展多语言监控能力',rating:null}
+      ]},
+      {id:'kr2.3',code:'KR 3',title:'加强整体数据基础设施建设，尤其是外部和第三方数据系统',items:[
+        {id:'item2.3.1',title:'行情',details:'外部市场数据接入\n行情数据实时展示\n数据质量监控',metrics:'Data sources ≥ 3\nData freshness < 5min\nData accuracy ≥ 99%',owner:'@Data Team',image:['okr-images/asynccode-17.png'],results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.3.2',title:'高热度关键词',details:'热门搜索词追踪\n趋势分析与预测\n内容策略联动',metrics:'Keyword tracking ≥ 500\nTrend prediction accuracy ≥ 75%\nContent alignment rate ≥ 80%',owner:'@SEO Team\n@Data Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.3.3',title:'竞品流量',details:'竞品流量监控\n市场份额分析\n竞争策略建议',metrics:'Competitors monitored ≥ 10\nReport frequency weekly\nStrategy recommendations ≥ 2/month',owner:'@Data Team\n@Strategy Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null}
+      ]},
+      {id:'kr2.4',code:'KR 4',title:'加强系统化用户运营能力，全面提升用户转化与LTV',items:[
+        {id:'item2.4.1',title:'新人转化率',details:'新用户转化流程优化\n首存引导策略\n流失预警',metrics:'New user FTD rate +20%\nOnboarding completion ≥ 80%\nDay-7 retention +15%',owner:'@CRM Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.4.2',title:'用户触达系统',details:'全渠道触达架构\nPush/Email/SMS整合\n个性化触达策略',metrics:'Omnichannel coverage 100%\nMessage delivery rate ≥ 98%\nPersonalization rate ≥ 60%',owner:'@CRM Team\n@Tech Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.4.3',title:'通知&活动联动',details:'通知系统与活动系统打通\n自动化触发规则\n效果追踪',metrics:'Automation rules ≥ 20\nTrigger accuracy ≥ 95%\nCTR improvement +25%',owner:'@CRM Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.4.4',title:'活动系统',details:'高效活动系统开发\n活动模板库\n快速上线能力',metrics:'Campaign launch time < 2 days\nTemplate library ≥ 20\nSystem uptime ≥ 99.9%',owner:'@Tech Team\n@CRM Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.4.5',title:'Mega活动',details:'大型营销活动策划\n跨区域协调\n全渠道整合',metrics:'Mega events ≥ 1/quarter\nParticipation rate ≥ 30%\nRevenue uplift ≥ 20%',owner:'@Marketing Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item2.4.6',title:'VIP/Referral',details:'VIP客户运营体系\nReferral裂变系统\n长期增长飞轮',metrics:'VIP retention ≥ 95%\nReferral conversion ≥ 10%\nLTV uplift ≥ 30%',owner:'@CRM Team\n@Growth Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null}
+      ]}
+    ]},
+    {id:'o3',status:'On Track',statusEn:'On Track',statusColor:'#E8585A',title:'在关键区域实现破局与增长，确立市场领导地位',subtitle:'强化信任 · 增加触点 · 提高转化',description:'聚焦UAE市场，通过信任建设、触点扩展和转化提升三大方向实现区域突破。',krs:[
+      {id:'kr3.1',code:'KR 1',title:'UAE市场深耕，建立品牌信任与市场地位',items:[
+        {id:'item3.1.1',title:'强化信任',details:'品牌信任度建设\n合规与牌照展示\n本地化信任背书',metrics:'Trust score +25%\nCompliance badge visibility 100%\nLocal endorsements ≥ 5',owner:'@UAE Team',image:['okr-images/asynccode-16.jpg'],results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.1.2',title:'增加触点',details:'线上线下触点扩展\n本地媒体合作\n社区活动',metrics:'Touchpoints +50%\nLocal media partnerships ≥ 10\nCommunity events ≥ 5',owner:'@UAE Team\n@Marketing Team',image:['okr-images/asynccode-21.jpg','okr-images/asynccode-22.png','okr-images/asynccode-23.png','okr-images/asynccode-24.png'],results:null,rating:'0.7',success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.1.3',title:'提高转化',details:'UAE用户转化优化\n本地支付集成\n阿拉伯语体验优化',metrics:'UAE conversion rate +30%\nLocal payment methods ≥ 5\nArabic UX satisfaction ≥ 4.5',owner:'@UAE Team\n@Product Team',image:['okr-images/asynccode-19.png'],results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null}
+      ]},
+      {id:'kr3.2',code:'KR 2',title:'全球关键市场品牌建设与增长',items:[
+        {id:'item3.2.1',title:'Brand first',details:'品牌优先策略\n品牌一致性管理\n全球品牌标准',metrics:'Brand consistency score ≥ 90%\nBrand guideline adoption 100%\nBrand audit pass rate ≥ 95%',owner:'@Brand Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.2',title:'Reputation & Trust',details:'全球品牌声誉管理\n信任度提升计划\n危机公关预案',metrics:'Global trust index +20%\nCrisis response time < 1h\nPositive coverage ratio ≥ 85%',owner:'@PR Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.3',title:'PR',details:'UAE及全球PR策略\n媒体关系深化\n行业影响力建设',metrics:'PR coverage +40%\nTier-1 media placements ≥ 10\nSOV improvement +15%',owner:'@PR Team\n@UAE Team',image:null,results:null,rating:'0.7',success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.4',title:'Product Optimization',details:'产品体验优化\n用户反馈闭环\n功能迭代加速',metrics:'NPS +10\nFeature delivery speed +30%\nBug resolution time < 24h',owner:'@Product Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.5',title:'Product No.1',details:'核心产品市场领先\n差异化功能打造\n用户体验标杆',metrics:'Product ranking top 3\nUnique features ≥ 5\nUser satisfaction ≥ 4.5',owner:'@Product Team',image:['okr-images/asynccode-18.png','okr-images/asynccode-28.jpg','okr-images/asynccode-29.png','okr-images/asynccode-30.png'],results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.6',title:'Advertising',details:'全球广告策略\n程序化广告优化\n品牌广告投放',metrics:'Ad efficiency +20%\nBrand ad recall +15%\nCPM optimization -10%',owner:'@Growth Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.7',title:'Promotion',details:'促销活动策划\n区域化促销策略\n效果评估体系',metrics:'Promotion ROI ≥ 3x\nParticipation rate ≥ 25%\nIncremental revenue +15%',owner:'@Marketing Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.8',title:'Integrated Marketing',details:'整合营销传播\n全渠道协同\n品效合一',metrics:'Campaign integration score ≥ 85%\nCross-channel synergy +20%\nAttribution accuracy ≥ 80%',owner:'@Marketing Team',image:null,results:null,rating:'0.7',success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.9',title:'IB',details:'IB渠道拓展\n合作伙伴管理\n佣金体系优化',metrics:'IB partners +30%\nIB revenue contribution +20%\nPartner satisfaction ≥ 4.0',owner:'@IB Team',image:null,results:null,rating:null,success:null,problems:null,improvement:null,quarterly:null},
+        {id:'item3.2.10',title:'Only Vantage',details:'Vantage独有优势打造\n差异化竞争壁垒\n品牌护城河建设',metrics:'Unique value propositions ≥ 3\nCompetitor differentiation score top 2\nBrand moat index +25%',owner:'@Strategy Team\n@Brand Team',image:null,results:null,rating:'0.7',success:null,problems:null,improvement:null,quarterly:null}
+      ]}
+    ]}
   ],
-  strategy:{
-    title:'2026 全球增长战略策略图',titleEn:'2026 Global Growth Strategy Map',
-    core:'2026 Q1 增长与品牌战略',coreEn:'2026 Q1 Growth & Brand Strategy',
-    pillars:[
-      {title:'品牌建设',titleEn:'Brand Building',items:['统一全球标识（VIS v2.0 推广）','高影响力活动（UK/AU 启动→全球扩展）','思想领导力（KOL 计划 & 全球研讨会）','社区参与（Vantage Rewards 上线）'],itemsEn:['Unified Global Identity (VIS v2.0 rollout)','High-Impact Campaigns (UK/AU Launch → Global)','Thought Leadership (KOL program & Webinars)','Community Engagement (Vantage Rewards)'],color:'#D44040',icon:'shield'},
-      {title:'增长与效率',titleEn:'Performance & Efficiency',items:['AI 驱动增长（Google/Meta AI 出价）','数据基础设施（归因模型 v3.0，CRM 集成）','自然流量主导（SEO 内容中心，ASO 优化）','漏斗优化（注册到入金转化提升）'],itemsEn:['AI-Driven Growth (AI bidding in Google/Meta)','Data Infrastructure (Attribution v3.0, CRM)','Organic Dominance (SEO hubs, ASO optimization)','Funnel Optimization (Reg-to-deposit conversion)'],color:'#E8585A',icon:'trend'},
-      {title:'区域破局',titleEn:'Regional Breakthrough',items:['规模化本地化（内容/支付/客服本地化）','东南亚领导地位（巩固 VN/TH 市场份额）','拉美扩张（墨西哥成功扩展至巴西/哥伦比亚）','监管合规（获取新 Tier-1 牌照）'],itemsEn:['Localization at Scale (Content, payment, support)','SEA Leadership (Consolidate VN/TH market share)','LATAM Expansion (Scale Mexico to Brazil/Colombia)','Regulatory Compliance (Secure new Tier-1 licenses)'],color:'#fbbf24',icon:'map'},
-    ],
-    execution:[],
-  },
-  areas:{title:'Q2 重点改进方向',titleEn:'Q2 Key Improvement Areas',items:[
-    {cn:'UK 法律审批流程优化，避免品牌活动延迟',en:'Optimize UK legal approval process to avoid brand campaign delays'},
-    {cn:'德国市场素材深度本地化',en:'Deep localization of assets for German market'},
-    {cn:'社交媒体互动率提升至 2.5%（当前 1.2%）',en:'Improve social media engagement rate to 2.5% (currently 1.2%)'},
-    {cn:'Twitter（X）西方市场新内容策略制定',en:'Develop new content strategy for Twitter (X) in Western markets'},
-    {cn:'Google 算法更新后内容审计与恢复',en:'Content audit and recovery plan post-Google algorithm update'},
-    {cn:'移动端网页到 App 旅程流失修复',en:'Fix mobile web-to-app journey leakage'},
-    {cn:'巴西支付网关集成加速',en:'Accelerate Brazil payment gateway integration'},
-    {cn:'阿拉伯语 RTL 技术方案落地 + QA 招聘',en:'Implement Arabic RTL technical solution + hire QA testers'},
-    {cn:'新兴市场本地化奖励方案设计',en:'Design localized rewards for emerging markets'},
-  ]},
   nextReviewDate:'2026.07.10',
   heroTitle:'VANTAGE',
   heroSubtitle:'Q1 2026 OKR REVIEW',
@@ -664,10 +965,11 @@ function getInitialData(){return{
 };}
 
 // ═══ Hero ═══
-function HeroSection({data,editMode,addHeroKpi,delHeroKpi}){
+function HeroSection({data,editMode,addHeroKpi,delHeroKpi,sectionRef}){
   const ro=!editMode;
   const[vidDone,setVidDone]=useState(false);
   const vidRef=useRef(null);
+  const heroRef=useRef(null);
 
   useEffect(()=>{
     const v=vidRef.current;if(!v)return;
@@ -677,13 +979,47 @@ function HeroSection({data,editMode,addHeroKpi,delHeroKpi}){
     return ()=>{v.removeEventListener('timeupdate',onTime);clearTimeout(fallback);};
   },[vidDone]);
 
+  // Scroll-driven height: 90vh → 100vh over 200px scroll (direct DOM, no React state)
+  useEffect(()=>{
+    let ticking=false;
+    const onScroll=()=>{
+      if(ticking)return;
+      ticking=true;
+      requestAnimationFrame(()=>{
+        const el=heroRef.current;if(!el)return;
+        const s=Math.min(window.scrollY/200,1);
+        el.style.height=(90+s*10)+'vh';
+        ticking=false;
+      });
+    };
+    window.addEventListener('scroll',onScroll,{passive:true});
+    return()=>window.removeEventListener('scroll',onScroll);
+  },[]);
+
+  // Hero video sound: scroll-only interaction to unmute when visible
+  useEffect(()=>{
+    const v=vidRef.current;const el=heroRef.current;if(!v||!el)return;
+    let interacted=false;
+    const onScroll=()=>{if(!interacted){interacted=true;window.removeEventListener('scroll',scrollHandler);}};
+    const scrollHandler=onScroll;
+    window.addEventListener('scroll',scrollHandler,{passive:true});
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(interacted&&e.isIntersecting){v.muted=false;v.volume=0.3;}
+        else{v.muted=true;}
+      });
+    },{threshold:0.3});
+    obs.observe(el);
+    return()=>{window.removeEventListener('scroll',scrollHandler);obs.disconnect();};
+  },[]);
+
   const fadeIn=vidDone?'heroContentIn 1.4s cubic-bezier(0.16,1,0.3,1) both':'none';
   const fadeInSlow=vidDone?'heroContentIn 1.4s cubic-bezier(0.16,1,0.3,1) 0.4s both':'none';
   const fadeInKpi=vidDone?'heroContentIn 1.4s cubic-bezier(0.16,1,0.3,1) 0.6s both':'none';
   const titleText=data.heroTitle||'VANTAGE';
 
   return(
-    <section id="hero" style={{position:'relative',height:'100vh',overflow:'hidden',background:'#0a0a0a'}}>
+    <section id="hero" ref={function(el){if(sectionRef)sectionRef.current=el;heroRef.current=el;}} style={{position:'relative',height:'90vh',overflow:'hidden',background:'#0a0a0a',willChange:'height',borderRadius:'0 0 24px 24px'}}>
       <video ref={vidRef} src="hero-bg.mp4" autoPlay muted playsInline
         style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',zIndex:1}}/>
       {/* Ink wash gradient overlay — darker bottom-left for text, lighter center for video */}
@@ -715,7 +1051,7 @@ function TopNav({active}){
     const fn=()=>{if(!ticking){requestAnimationFrame(()=>{nav.classList.toggle('scrolled',window.scrollY>window.innerHeight*.7);ticking=false;});ticking=true;}};
     window.addEventListener('scroll',fn,{passive:true});return()=>window.removeEventListener('scroll',fn);
   },[]);
-  const items=[{id:'o1',label:'O1',full:'品牌'},{id:'o2',label:'O2',full:'增长'},{id:'o3',label:'O3',full:'突破'},{id:'strategy',label:'战略',full:''},{id:'areas',label:'Q2',full:'改进'}];
+  const items=[{id:'o1',label:'O1',full:'品牌'},{id:'o2',label:'O2',full:'增长'},{id:'o3',label:'O3',full:'突破'}];
   return(
     <nav ref={navRef} className="top-nav">
       <div style={{width:'100%',padding:'0 48px',display:'flex',alignItems:'center',height:52,justifyContent:'space-between'}}>
@@ -905,6 +1241,7 @@ function LoginOverlay({onLogin}){
 // ═══ Footer Video ═══
 function FooterVideo(){
   const vidRef=useRef(null);
+  const containerRef=useRef(null);
   const[visible,setVisible]=useState(false);
 
   useEffect(()=>{
@@ -920,6 +1257,19 @@ function FooterVideo(){
     obs.observe(v);
     return ()=>obs.disconnect();
   },[visible]);
+
+  // Footer video sound: unmute when visible, mute when not
+  useEffect(()=>{
+    const el=containerRef.current;const v=vidRef.current;if(!el||!v)return;
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){v.muted=false;v.volume=0.3;}
+        else{v.muted=true;}
+      });
+    },{threshold:0.3});
+    obs.observe(el);
+    return()=>obs.disconnect();
+  },[]);
 
   useEffect(()=>{
     const v=vidRef.current;if(!v||!visible)return;
@@ -941,7 +1291,7 @@ function FooterVideo(){
   },[visible]);
 
   return(
-    <div style={{position:'relative',width:'100%',height:'100vh',overflow:'hidden'}}>
+    <div ref={containerRef} style={{position:'relative',width:'100%',height:'100vh',overflow:'hidden'}}>
       <video ref={vidRef} src="footer-bg.mp4" muted playsInline preload="auto"
         style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',zIndex:1}}/>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at center,transparent 40%,rgba(10,6,6,0.6) 70%,rgba(10,6,6,0.95) 100%)',pointerEvents:'none',zIndex:2}}/>
@@ -949,29 +1299,134 @@ function FooterVideo(){
   );
 }
 
+// ═══ ImagePreview ═══
+function ImagePreview({src,onClose}){
+  return(
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:99998,background:'rgba(0,0,0,0.92)',backdropFilter:'blur(8px)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',animation:'fadeIn 0.3s ease'}}>
+      <img src={src} style={{maxWidth:'90vw',maxHeight:'90vh',borderRadius:8,boxShadow:'0 20px 60px rgba(0,0,0,0.5)'}}/>
+      <div style={{position:'absolute',top:20,right:20,color:'#fff',fontSize:24,cursor:'pointer'}}>✕</div>
+    </div>
+  );
+}
+
+// ═══ NestedOKRSection ═══
+function NestedOKRSection({objectives,editMode,lightboxSrc,setLightboxSrc}){
+  const [selectedModule,setSelectedModule]=useState(null);
+  const renderNl=(s)=>{if(!s)return null;return s.split('\n').map((line,i)=><div key={i} style={{marginBottom:2}}>{line}</div>);};
+  const ratingColor=(r)=>{const v=parseFloat(r);if(v>=0.8)return '#4ade80';if(v>=0.6)return '#fbbf24';return '#f87171';};
+
+  return(
+    <div>
+      {objectives.map((obj,oi)=>(
+        <section key={obj.id} id={obj.id} style={{marginBottom:80}}>
+          {/* Objective header */}
+          <div className="sec-anim" style={{padding:'80px 0 24px',position:'relative'}}>
+            <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}>
+              <span style={{fontSize:12,fontWeight:700,padding:'4px 14px',borderRadius:8,background:`${obj.statusColor}18`,color:obj.statusColor,fontFamily:T.font.mono,letterSpacing:'0.06em'}}>{obj.id.toUpperCase()} · {obj.statusEn}</span>
+            </div>
+            <h2 style={{fontSize:42,fontWeight:900,fontFamily:T.font.cn,color:'#fff',lineHeight:1.2,marginBottom:10}}>{obj.title}</h2>
+            <div style={{width:60,height:4,borderRadius:2,background:T.accent,marginBottom:12}}/>
+            <div style={{fontSize:15,color:T.textBody,fontFamily:T.font.cn,marginBottom:6}}>{obj.subtitle}</div>
+            {obj.description&&<div style={{fontSize:13,color:T.textMuted,fontFamily:T.font.cn,lineHeight:1.7,maxWidth:800}}>{obj.description}</div>}
+          </div>
+
+          {/* Review summary bar */}
+          <div className="sec-anim d1" style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:28}}>
+            {obj.krs.flatMap(kr=>kr.items).filter(it=>it.rating).map(it=>(
+              <div key={it.id} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:11,color:T.textMuted,fontFamily:T.font.cn}}>{it.title}</span>
+                <span style={{fontSize:12,fontWeight:700,color:ratingColor(it.rating),fontFamily:T.font.mono}}>{it.rating}</span>
+              </div>
+            ))}
+            {obj.krs.flatMap(kr=>kr.items).filter(it=>it.results).slice(0,3).map(it=>(
+              <div key={it.id+'r'} style={{padding:'6px 14px',borderRadius:20,background:'rgba(74,222,128,0.06)',border:'1px solid rgba(74,222,128,0.15)',display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:9,color:'#4ade80',fontFamily:T.font.en}}>HAS RESULTS</span>
+                <span style={{fontSize:11,color:T.textMuted,fontFamily:T.font.cn}}>{it.title}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* KR grid — 3 columns */}
+          {obj.krs.map(kr=>(
+            <div key={kr.id} style={{marginBottom:36}}>
+              <div className="sec-anim d2" style={{fontSize:13,fontWeight:700,color:T.accentLight,fontFamily:T.font.mono,letterSpacing:'0.06em',marginBottom:14,display:'flex',alignItems:'center',gap:10}}>
+                <span style={{padding:'3px 10px',borderRadius:6,background:T.accentSoft}}>{kr.code}</span>
+                <span style={{fontSize:14,fontWeight:600,color:T.text,fontFamily:T.font.cn}}>{kr.title}</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+                {kr.items.map(item=>(
+                  <div key={item.id} className="glow-card glass-card" onClick={()=>setSelectedModule({obj,kr,item})} style={{padding:'20px',cursor:'pointer',background:T.bgCard,borderRadius:T.r.lg,border:`1px solid ${T.border}`,transition:'all 0.3s'}}>
+                    <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                      <Icon name="chart" size={18} color={T.accentLight}/>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:600,color:T.text,fontFamily:T.font.cn,lineHeight:1.4}}>{item.title}</div>
+                      </div>
+                      {item.rating&&<span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:6,background:`${ratingColor(item.rating)}18`,color:ratingColor(item.rating),fontFamily:T.font.mono,flexShrink:0}}>{item.rating}</span>}
+                    </div>
+                    {item.owner&&<div style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en,marginBottom:6}}>{item.owner.split('\n')[0]}</div>}
+                    {item.results&&<div style={{fontSize:11,color:'rgba(74,222,128,0.7)',fontFamily:T.font.cn,lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{item.results.split('\n')[0]}</div>}
+                    {item.image&&item.image.length>0&&(
+                      <div style={{display:'flex',gap:4,marginTop:8}}>{item.image.slice(0,3).map((img,i)=><img key={i} src={img} style={{width:36,height:36,borderRadius:4,objectFit:'cover',border:'1px solid rgba(255,255,255,0.08)'}}/>)}{item.image.length>3&&<span style={{fontSize:9,color:T.textMuted,alignSelf:'center'}}>+{item.image.length-3}</span>}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
+
+      {/* Detail overlay */}
+      {selectedModule&&(()=>{
+        const {obj,kr,item}=selectedModule;
+        return(
+          <div style={{position:'fixed',inset:0,zIndex:999,background:'rgba(10,6,6,0.95)',backdropFilter:'blur(12px)',overflow:'auto',animation:'fadeIn 0.3s ease'}}>
+            <div style={{maxWidth:1200,margin:'0 auto',padding:'40px 60px 80px'}}>
+              {/* Back button */}
+              <button onClick={()=>setSelectedModule(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:T.text,padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontFamily:T.font.en,marginBottom:32,display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:16}}>←</span> Back to {obj.id.toUpperCase()}
+              </button>
+              <div style={{display:'grid',gridTemplateColumns:'300px 1fr',gap:40}}>
+                {/* Sidebar */}
+                <div>
+                  <h3 style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:T.font.cn,lineHeight:1.3,marginBottom:16}}>{item.title}</h3>
+                  <div style={{padding:'4px 12px',borderRadius:6,background:T.accentSoft,color:T.accentLight,fontSize:10,fontWeight:700,fontFamily:T.font.en,letterSpacing:'0.08em',display:'inline-block',marginBottom:20}}>MODULE DETAILS</div>
+                  {item.owner&&<div style={{marginBottom:16}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:6,fontFamily:T.font.en}}>OWNER</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.en,lineHeight:1.6}}>{renderNl(item.owner)}</div></div>}
+                  {item.rating&&<div style={{marginBottom:16}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:6,fontFamily:T.font.en}}>SELF RATING</div><div style={{fontSize:28,fontWeight:800,color:ratingColor(item.rating),fontFamily:T.font.mono}}>{item.rating}</div></div>}
+                </div>
+                {/* Main content */}
+                <div>
+                  <div style={{marginBottom:24,padding:'16px 20px',background:'rgba(212,64,64,0.05)',borderRadius:12,borderLeft:`3px solid ${T.accent}`}}>
+                    <div style={{fontSize:10,fontWeight:700,color:T.accentLight,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>KR SUBJECT</div>
+                    <div style={{fontSize:14,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.7}}>{kr.code} — {kr.title}</div>
+                  </div>
+                  {item.details&&<div style={{marginBottom:24}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>DETAILS</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.details)}</div></div>}
+                  {item.metrics&&<div style={{marginBottom:24}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>METRICS</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.metrics)}</div></div>}
+                  {item.image&&item.image.length>0&&<div style={{marginBottom:24}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:12,fontFamily:T.font.en}}>IMAGES</div><div style={{display:'flex',gap:12,flexWrap:'wrap'}}>{item.image.map((img,i)=><img key={i} src={img} onClick={(e)=>{e.stopPropagation();setLightboxSrc(img);}} style={{height:120,borderRadius:8,objectFit:'cover',cursor:'pointer',border:'1px solid rgba(255,255,255,0.1)',transition:'transform 0.2s'}} onMouseEnter={e=>e.currentTarget.style.transform='scale(1.05)'} onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}/>)}</div></div>}
+                  {item.products&&item.products.length>0&&<div style={{marginBottom:24}}><div style={{fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.08em',marginBottom:12,fontFamily:T.font.en}}>PRODUCTS</div><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>{item.products.map((p,i)=><div key={i} className="glass-card" style={{padding:14,borderRadius:10,background:T.bgCard,border:`1px solid ${T.border}`}}>{p.image&&<img src={p.image} style={{width:'100%',height:100,objectFit:'cover',borderRadius:6,marginBottom:8}}/>}<div style={{fontSize:12,fontWeight:600,color:T.text,fontFamily:T.font.cn,marginBottom:4}}>{p.title}</div><div style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en}}>{p.series} · {p.id}</div><div style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en,marginTop:4}}>Sample: {p.sampleDate} · Mass: {p.massDate}</div></div>)}</div></div>}
+                  {item.results&&<div style={{marginBottom:24,padding:'16px 20px',background:'rgba(74,222,128,0.05)',borderRadius:12,border:'1px solid rgba(74,222,128,0.12)'}}><div style={{fontSize:10,fontWeight:700,color:'#4ade80',letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>RESULTS</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.results)}</div></div>}
+                  {item.success&&<div style={{marginBottom:24,padding:'16px 20px',background:'rgba(96,165,250,0.05)',borderRadius:12,border:'1px solid rgba(96,165,250,0.12)'}}><div style={{fontSize:10,fontWeight:700,color:'#60a5fa',letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>SUCCESS</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.success)}</div></div>}
+                  {item.problems&&<div style={{marginBottom:24,padding:'16px 20px',background:'rgba(251,191,36,0.05)',borderRadius:12,border:'1px solid rgba(251,191,36,0.12)'}}><div style={{fontSize:10,fontWeight:700,color:'#fbbf24',letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>PROBLEMS</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.problems)}</div></div>}
+                  {item.improvement&&<div style={{marginBottom:24,padding:'16px 20px',background:'rgba(248,113,113,0.05)',borderRadius:12,border:'1px solid rgba(248,113,113,0.12)'}}><div style={{fontSize:10,fontWeight:700,color:'#f87171',letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>IMPROVEMENT</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.improvement)}</div></div>}
+                  {item.quarterly&&<div style={{marginBottom:24,padding:'16px 20px',background:'rgba(168,85,247,0.05)',borderRadius:12,border:'1px solid rgba(168,85,247,0.12)'}}><div style={{fontSize:10,fontWeight:700,color:'#a855f7',letterSpacing:'0.08em',marginBottom:8,fontFamily:T.font.en}}>QUARTERLY PLAN</div><div style={{fontSize:13,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.8}}>{renderNl(item.quarterly)}</div></div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
 // ═══ App ═══
 function App(){
   const [authed,setAuthed]=useState(()=>sessionStorage.getItem('vantage-auth')==='ok');
-  const [expandedKR,setExpandedKR]=useState(null);
+  const [lightboxSrc,setLightboxSrc]=useState(null);
   const [activeSection,setActiveSection]=useState('o1');
   const [data,setData]=useState(getInitialData);
   const [editMode,setEditMode]=useState(false);
   const [showConfirm,setShowConfirm]=useState(false);
-  const toggleKR=useCallback(id=>setExpandedKR(prev=>prev===id?null:id),[]);
-
-  // CRUD helpers
-  const addObj=()=>setData(p=>({...p,objectives:[...p.objectives,{id:'o'+(p.objectives.length+1),status:'Not Started',statusEn:'Not Started',statusColor:'#6b7a92',title:'新 Objective',titleEn:'New Objective',subtitle:'',subtitleEn:'',krs:[]}]}));
-  const delObj=id=>setData(p=>({...p,objectives:p.objectives.filter(o=>o.id!==id)}));
-  const addKR=(objId,vals)=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:[...o.krs,{id:'kr'+Date.now(),code:vals?.code||'KR New',title:vals?.title||'新 Key Result',titleEn:vals?.titleEn||'New Key Result',tags:[],summary:'',summaryEn:'',result:'',resultEn:'',annual:[],annualEn:[],metrics:[],owner:'',improvement:null,improvementEn:null}]}:o)}));
-  const delKR=(objId,krId)=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.filter(k=>k.id!==krId)}:o)}));
-  const addMetric=(objId,krId,m)=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===krId?{...k,metrics:[...k.metrics,m||{label:'新指标',labelEn:'New Metric',value:'—',icon:'chart'}]}:k)}:o)}));
-  const delMetric=(objId,krId,idx)=>setData(p=>({...p,objectives:p.objectives.map(o=>o.id===objId?{...o,krs:o.krs.map(k=>k.id===krId?{...k,metrics:k.metrics.filter((_,i)=>i!==idx)}:k)}:o)}));
-  const addPillar=()=>setData(p=>({...p,strategy:{...p.strategy,pillars:[...p.strategy.pillars,{title:'新支柱',titleEn:'New Pillar',items:[],itemsEn:[],color:T.accent,icon:'chart'}]}}));
-  const delPillar=idx=>setData(p=>({...p,strategy:{...p.strategy,pillars:p.strategy.pillars.filter((_,i)=>i!==idx)}}));
-  const addExec=()=>setData(p=>({...p,strategy:{...p.strategy,execution:[...(p.strategy.execution||[]),{title:'新执行项',titleEn:'New Execution',items:[],itemsEn:[],color:T.accentLight,icon:'chart'}]}}));
-  const delExec=idx=>setData(p=>({...p,strategy:{...p.strategy,execution:(p.strategy.execution||[]).filter((_,i)=>i!==idx)}}));
-  const addArea=(vals)=>setData(p=>({...p,areas:{...p.areas,items:[...p.areas.items,{cn:vals?.cn||'新改进项',en:vals?.en||'New improvement item'}]}}));
-  const delArea=idx=>setData(p=>({...p,areas:{...p.areas,items:p.areas.items.filter((_,i)=>i!==idx)}}));
   const addHeroKpi=(kpi)=>setData(p=>({...p,heroKpis:[...p.heroKpis,{value:kpi?.value||'—',label:kpi?.label||'NEW KPI'}]}));
   const delHeroKpi=idx=>setData(p=>({...p,heroKpis:p.heroKpis.filter((_,i)=>i!==idx)}));
   const saveData=()=>{localStorage.setItem('okr-save',document.documentElement.outerHTML);};
@@ -997,160 +1452,9 @@ function App(){
         <img src="section-image.jpg" style={{width:'100%',display:'block',borderRadius:8}}/>
         <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at center,transparent 30%,rgba(10,6,6,0.4) 70%,rgba(10,6,6,0.8) 100%)',borderRadius:8,pointerEvents:'none'}}/>
       </div>
+      <DashboardSection editMode={editMode}/>
       <main style={{maxWidth:1400,margin:'0 auto',padding:'30px 60px 120px'}}>
-        {/* Status Legend */}
-        <div style={{display:'flex',gap:24,justifyContent:'center',marginBottom:8}}>
-          {data.statusLegend.map((s,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:6}}>
-              <div style={{width:8,height:8,borderRadius:4,background:s.color,boxShadow:`0 0 8px ${s.color}40`}}/>
-              <span style={{fontSize:10,color:T.textSec,fontFamily:T.font.en}}>{s.label}</span>
-              <span style={{fontSize:9,color:T.textMuted,fontFamily:T.font.cn}}>{s.desc}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Summary Metrics — Magazine: hero stat + 3 supporting */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:20,marginBottom:28,marginTop:8}}>
-          {/* Hero stat — spans first column, larger treatment */}
-          {data.summaryMetrics.slice(0,1).map((m,i)=>(
-            <div key={i} className="glow-card" style={{background:T.bgCard,borderRadius:T.r.lg,padding:'32px 28px',border:`1px solid ${T.border}`,textAlign:'left',gridRow:'span 1'}}>
-              <div style={{fontSize:10,fontWeight:600,color:T.textMuted,letterSpacing:'0.12em',fontFamily:T.font.en,marginBottom:12}}><Icon name={m.icon} size={14} color={T.textMuted}/> <span style={{marginLeft:6}}>{m.label}</span></div>
-              <div className="num-glow" style={{fontSize:48,fontWeight:800,fontFamily:T.font.mono,color:m.good?'#e8dcd4':T.accentLight,letterSpacing:'-0.02em'}}><Ed readOnly={!editMode}>{m.value}</Ed></div>
-              <div style={{fontSize:10,color:T.textSec,fontFamily:T.font.en,marginTop:2,display:'none'}}><Ed readOnly={!editMode}>{m.labelEn}</Ed></div>
-              {m.sub&&<div style={{fontSize:11,color:T.textMuted,marginTop:10,fontFamily:T.font.cn}}><Ed readOnly={!editMode}>{m.sub}</Ed></div>}
-            </div>
-          ))}
-          {/* 3 supporting stats — right two columns stacked */}
-          {data.summaryMetrics.slice(1).map((m,i)=>(
-            <div key={i+1} className="glow-card" style={{background:T.bgCard,borderRadius:T.r.lg,padding:'24px 22px',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:20}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:10,fontWeight:600,color:T.textMuted,letterSpacing:'0.1em',fontFamily:T.font.en,marginBottom:8}}>{m.label}</div>
-                <div className="num-glow" style={{fontSize:34,fontWeight:700,fontFamily:T.font.mono,color:m.good?'#e8dcd4':T.accentLight}}><Ed readOnly={!editMode}>{m.value}</Ed></div>
-              </div>
-              <div style={{width:44,height:44,borderRadius:12,background:m.accent?'rgba(212,64,64,0.08)':'rgba(255,255,255,0.03)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name={m.icon} size={22} color={m.good?'#e8dcd4':T.accentLight} glow/></div>
-            </div>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div style={{width:'100%',height:1,background:'linear-gradient(90deg,transparent,rgba(212,64,64,0.15),rgba(212,64,64,0.08),transparent)',marginBottom:20}}/>
-
-        {/* Headline Metrics — Magazine: 3-column editorial grid */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20,marginBottom:56}}>
-          {data.headlineMetrics.map((m,i)=>(
-            <div key={i} className="glow-card" style={{background:T.bgCard,borderRadius:T.r.lg,padding:'22px 20px',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:16}}>
-              <div style={{width:40,height:40,borderRadius:10,background:m.accent?'rgba(212,64,64,0.08)':'rgba(255,255,255,0.03)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name={m.icon} size={20} color={m.good?'#e8dcd4':T.accentLight} glow/></div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="num-glow" style={{fontSize:24,fontWeight:700,fontFamily:T.font.mono,color:m.good?'#e8dcd4':T.accentLight,lineHeight:1.1}}><Ed readOnly={!editMode}>{m.value}</Ed></div>
-                <div style={{fontSize:11,color:T.text,marginTop:3,fontWeight:500,fontFamily:T.font.cn}}><Ed readOnly={!editMode}>{m.label}</Ed></div>
-              </div>
-              {m.sub&&<div style={{fontSize:9,color:T.textMuted,fontFamily:T.font.cn,flexShrink:0}}><Ed readOnly={!editMode}>{m.sub}</Ed></div>}
-            </div>
-          ))}
-        </div>
-
-        {data.objectives.map((obj,oi)=>(
-          <section key={obj.id} id={obj.id} className="edit-section">
-            {/* Editorial header: big number + title left-aligned */}
-            <div className="sec-anim" style={{padding:'80px 0 36px',display:'grid',gridTemplateColumns:'80px 1fr',gap:'0 28px',alignItems:'start',position:'relative'}}>
-              {editMode&&<div style={{position:'absolute',top:80,right:0,zIndex:10}}><DelBtn onClick={()=>delObj(obj.id)} label="目标"/></div>}
-              {/* Big section number */}
-              <div style={{textAlign:'right',paddingTop:6}}>
-                <div style={{fontSize:64,fontWeight:900,fontFamily:T.font.mono,color:'rgba(212,64,64,0.12)',lineHeight:0.85,letterSpacing:'-0.04em'}}>{String(oi+1).padStart(2,'0')}</div>
-                <div style={{marginTop:8,fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:10,background:`${obj.statusColor}12`,color:obj.statusColor,fontFamily:T.font.mono,letterSpacing:'0.04em',display:'inline-block'}}>{obj.id.toUpperCase()}</div>
-              </div>
-              {/* Title + subtitle */}
-              <div>
-                <h2 className="title-gradient" style={{fontSize:36,fontWeight:900,fontFamily:T.font.cn,marginBottom:6,lineHeight:1.25,letterSpacing:'-0.01em'}}><Ed readOnly={!editMode}>{obj.title}</Ed></h2>
-                <p style={{fontSize:13,color:T.textSec,fontFamily:T.font.en,marginBottom:10,display:'none'}}><Ed readOnly={!editMode}>{obj.titleEn}</Ed></p>
-                <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
-                  <p style={{fontSize:15,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.5}}><Ed readOnly={!editMode}>{obj.subtitle}</Ed></p>
-                  <span style={{fontSize:10,fontWeight:600,color:obj.statusColor,fontFamily:T.font.en,padding:'3px 10px',borderRadius:8,background:`${obj.statusColor}10`,border:`1px solid ${obj.statusColor}20`}}>{obj.statusEn}</span>
-                </div>
-              </div>
-            </div>
-            {/* KR cards — indented under the header grid */}
-            <div style={{paddingLeft:108}}>
-              {obj.krs.map(kr=><KRCard key={kr.id} kr={kr} expanded={expandedKR===kr.id} onToggle={()=>toggleKR(kr.id)} editMode={editMode} objId={obj.id} delKR={delKR} addMetric={addMetric} delMetric={delMetric}/>)}
-              {editMode&&<div style={{margin:'8px 0 24px'}}><AddItemForm fields={[{key:'code',placeholder:'KR 编号（如 KR 1.4）'},{key:'title',placeholder:'KR 标题（中文）'},{key:'titleEn',placeholder:'KR 标题（英文）'}]} label="添加 KR" onSubmit={vals=>addKR(obj.id,vals)}/></div>}
-            </div>
-          </section>
-        ))}
-        {editMode&&<div style={{margin:'16px 0',textAlign:'center'}}><button className="edit-btn edit-btn-add" onClick={addObj}>+ 添加 Objective</button></div>}
-        <div className="section-sep"/>
-
-        <section id="strategy" className="edit-section">
-          {/* Strategy header — editorial left-aligned */}
-          <div className="sec-anim" style={{padding:'80px 0 36px',display:'grid',gridTemplateColumns:'80px 1fr',gap:'0 28px',alignItems:'start'}}>
-            <div style={{textAlign:'right',paddingTop:6}}>
-              <div style={{fontSize:64,fontWeight:900,fontFamily:T.font.mono,color:'rgba(212,64,64,0.12)',lineHeight:0.85}}>S</div>
-              <span style={{fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:10,background:`${T.accent}12`,color:T.accent,fontFamily:T.font.mono,marginTop:8,display:'inline-block'}}>STRATEGY</span>
-            </div>
-            <div>
-              <h2 className="title-gradient" style={{fontSize:36,fontWeight:900,fontFamily:T.font.cn,marginBottom:6,lineHeight:1.25}}><Ed readOnly={!editMode}>{data.strategy.title}</Ed></h2>
-              <div style={{fontSize:20,color:T.accentLight,fontWeight:600,fontFamily:T.font.cn,lineHeight:1.5}}><Ed readOnly={!editMode}>{data.strategy.core}</Ed></div>
-            </div>
-          </div>
-          {/* Pillars — 2-column editorial, alternating visual weight */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,marginBottom:40,paddingLeft:108}}>
-            {data.strategy.pillars.map((p,i)=>(
-              <div key={i} className={`sec-anim d${i+1} glow-card glass-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'28px 24px',border:`1px solid ${T.border}`,position:'relative'}}>
-                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:10}}><DelBtn onClick={()=>delPillar(i)} label="支柱"/></div>}
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}><Icon name={p.icon} size={26} color={p.color} glow/><div style={{width:40,height:3,borderRadius:2,background:p.color}}/><span style={{fontSize:10,color:T.textMuted,fontFamily:T.font.en,marginLeft:'auto'}}>PILLAR {i+1}</span></div>
-                <h3 style={{fontSize:18,fontWeight:700,color:T.text,fontFamily:T.font.cn,marginBottom:4}}><Ed readOnly={!editMode}>{p.title}</Ed></h3>
-                <div style={{fontSize:11,color:T.textSec,fontFamily:T.font.en,marginBottom:14,display:'none'}}><Ed readOnly={!editMode}>{p.titleEn}</Ed></div>
-                {p.items.map((item,j)=>(<div key={j} style={{padding:'10px 0',borderBottom:j<p.items.length-1?`1px solid ${T.borderLight}`:'none'}}><div style={{fontSize:14,color:T.textBody,fontFamily:T.font.cn,lineHeight:1.6}}><Ed readOnly={!editMode}>{item}</Ed></div><div style={{fontSize:10.5,color:T.textSec,fontFamily:T.font.en,marginTop:1,display:'none'}}><Ed readOnly={!editMode}>{p.itemsEn[j]}</Ed></div></div>))}
-              </div>
-            ))}
-          </div>
-          {editMode&&<div style={{marginBottom:24,paddingLeft:108}}><button className="edit-btn edit-btn-add" onClick={addPillar}>+ 添加支柱</button></div>}
-          {/* Execution — flowing editorial cards */}
-          <div style={{paddingLeft:108}}>
-            <div className="sec-anim d4" style={{fontSize:10,fontWeight:700,color:T.textSec,letterSpacing:'0.12em',marginBottom:20,fontFamily:T.font.en}}>REGIONAL EXPANSION</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
-              {data.strategy.execution.map((ex,i)=>(
-                <div key={i} className={`sec-anim d${i+5} glow-card`} style={{background:T.bgCard,borderRadius:T.r.lg,padding:'22px',border:`1px solid ${T.border}`,position:'relative'}}>
-                  {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:10}}><DelBtn onClick={()=>delExec(i)} label="执行项"/></div>}
-                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-                    <Icon name={ex.icon} size={22} color={ex.color||T.accentLight} glow/>
-                    <div style={{fontSize:13,fontWeight:600,color:T.text,fontFamily:T.font.cn}}><Ed readOnly={!editMode}>{ex.title}</Ed></div>
-                  </div>
-                  {(ex.items||[]).map((item,j)=>(
-                    <div key={j} style={{fontSize:12,color:T.textBody,fontFamily:T.font.cn,padding:'6px 0',borderTop:j>0?`1px solid ${T.borderLight}`:'none',lineHeight:1.5}}>
-                      <Ed readOnly={!editMode}>{item}</Ed>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-            {editMode&&<div style={{marginTop:16}}><button className="edit-btn edit-btn-add" onClick={addExec}>+ 添加执行项</button></div>}
-          </div>
-        </section>
-
-        <section id="areas" className="edit-section">
-          {/* Q2 header — editorial */}
-          <div className="sec-anim" style={{padding:'80px 0 36px',display:'grid',gridTemplateColumns:'80px 1fr',gap:'0 28px',alignItems:'start'}}>
-            <div style={{textAlign:'right',paddingTop:6}}>
-              <div style={{fontSize:64,fontWeight:900,fontFamily:T.font.mono,color:'rgba(251,191,36,0.12)',lineHeight:0.85}}>Q2</div>
-              <span style={{fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:10,background:`${T.amber}12`,color:T.amber,fontFamily:T.font.mono,marginTop:8,display:'inline-block'}}>IMPROVE</span>
-            </div>
-            <div>
-              <h2 className="title-gradient" style={{fontSize:36,fontWeight:900,fontFamily:T.font.cn,marginBottom:6,lineHeight:1.25}}><Ed readOnly={!editMode}>{data.areas.title}</Ed></h2>
-            </div>
-          </div>
-          {/* 2-column editorial grid */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,paddingLeft:108,maxWidth:900}}>
-            {data.areas.items.map((item,i)=>(
-              <div key={i} className={`sec-anim d${i+1} glow-card glass-card`} style={{display:'flex',alignItems:'flex-start',gap:14,background:T.bgCard,borderRadius:T.r.lg,padding:'20px 22px',border:`1px solid ${T.border}`,position:'relative'}}>
-                {editMode&&<div style={{position:'absolute',top:8,right:8,zIndex:10}}><DelBtn onClick={()=>delArea(i)} label="此项"/></div>}
-                <div style={{width:30,height:30,borderRadius:8,flexShrink:0,background:T.accentSoft,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:T.accentLight,fontFamily:T.font.mono}}>{i+1}</div>
-                <div style={{fontSize:14,color:T.textBody,lineHeight:1.6,fontFamily:T.font.cn}}><Ed readOnly={!editMode}>{item.cn}</Ed></div>
-              </div>
-            ))}
-          </div>
-          {editMode&&<div style={{paddingLeft:108,marginTop:16,maxWidth:900}}><AddItemForm fields={[{key:'cn',placeholder:'改进项（中文）'},{key:'en',placeholder:'改进项（英文）'}]} label="添加改进项" onSubmit={addArea}/></div>}
-        </section>
-
+        <NestedOKRSection objectives={data.objectives} editMode={editMode} lightboxSrc={lightboxSrc} setLightboxSrc={setLightboxSrc}/>
       </main>
 
       {/* Thank You image — above footer video, with vignette */}
@@ -1172,6 +1476,7 @@ function App(){
 
       <SaveBar editMode={editMode} onToggleEdit={()=>setEditMode(true)} onRequestExit={handleRequestExit}/>
       {showConfirm&&<ConfirmDialog onSave={handleConfirmSave} onDiscard={handleConfirmDiscard} onCancel={()=>setShowConfirm(false)}/>}
+      {lightboxSrc&&<ImagePreview src={lightboxSrc} onClose={()=>setLightboxSrc(null)}/>}
     </div>
   );
 }
