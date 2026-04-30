@@ -1,0 +1,9 @@
+.vercel
+.netlify
+node_modules
+.DS_Store
+*.mp4
+debug-*.png
+verify-*.png
+check-*.png
+v4-*.png
