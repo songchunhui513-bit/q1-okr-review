@@ -1,0 +1,21 @@
+# Production media is delivered through the public remote-media manifest.
+# The remote build receives only source files and regenerates the dist artifact.
+.git/
+.vercel/
+dist/
+vendor/
+runtime-config.js
+backups/
+docs/
+tests/
+supabase/
+node_modules/
+.tmp/
+.codex-backups/
+previews/assets/ppt-originals/
+**/*.mp4
+!previews/assets/vantage-h1-opening-final-4k.mp4
+debug-*.png
+verify-*.png
+check-*.png
+v4-*.png
