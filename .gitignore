@@ -14,6 +14,7 @@ previews/assets/ppt-originals/
 supabase/.temp/
 *.mp4
 !previews/assets/vantage-h1-opening-final-4k.mp4
+!previews/assets/vantage-h1-second-screen-final-1080p.mp4
 !previews/assets/vantage-h1-second-screen-july28-sound-4k.mp4
 !previews/assets/vantage-h1-closing-sp-4k.mp4
 debug-*.png

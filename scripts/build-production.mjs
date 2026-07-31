@@ -59,7 +59,10 @@ await Promise.all([
   "previews/h1-objective-chapters.css",
 ].map((file) => copyPublicFile(file)));
 
-await copyPublicFile("previews/assets/vantage-h1-opening-final-4k.mp4");
+await Promise.all([
+  copyPublicFile("previews/assets/vantage-h1-opening-final-4k.mp4"),
+  copyPublicFile("previews/assets/vantage-h1-second-screen-final-1080p.mp4"),
+]);
 
 await cp(
   resolve(root, "previews/assets"),

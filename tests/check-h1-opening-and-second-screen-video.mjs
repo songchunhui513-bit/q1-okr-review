@@ -11,7 +11,7 @@ const openingPosterPath = path.join(
 );
 const secondVideoPath = path.join(
   root,
-  "previews/assets/vantage-h1-second-screen-final-4k.mp4",
+  "previews/assets/vantage-h1-second-screen-final-1080p.mp4",
 );
 const secondPosterPath = path.join(
   root,
@@ -44,8 +44,8 @@ const secondScene = formal.match(
 assert.ok(secondScene, "the second screen must be implemented as a video scene");
 assert.match(
   secondScene,
-  /<video\b(?=[^>]*id="secondScreenVideo")(?=[^>]*class="video-bg second-screen-video")(?=[^>]*playsinline)(?=[^>]*preload="metadata")(?=[^>]*poster="assets\/vantage-h1-second-screen-final-poster\.jpg")(?=[^>]*data-src="previews\/assets\/vantage-h1-second-screen-final-4k\.mp4")[^>]*>/,
-  "the second screen must defer the supplied full-bleed film until its scene becomes active",
+  /<video\b(?=[^>]*id="secondScreenVideo")(?=[^>]*class="video-bg second-screen-video")(?=[^>]*playsinline)(?=[^>]*preload="metadata")(?=[^>]*poster="assets\/vantage-h1-second-screen-final-poster\.jpg")(?=[^>]*data-src="\/previews\/assets\/vantage-h1-second-screen-final-1080p\.mp4")[^>]*>/,
+  "the second screen must defer the same-origin compatibility film until its scene becomes active",
 );
 assert.doesNotMatch(
   secondScene,
@@ -80,18 +80,18 @@ assert.match(
 );
 assert.match(
   formal,
-  /const playSceneVideo = \(video\) => \{[\s\S]*?video\.muted = !isSoundAudible\(\);[\s\S]*?video\.play\(\)\.then\([\s\S]*?\.catch\(\(\) => \{[\s\S]*?video\.muted = true;[\s\S]*?video\.play\(\)\.catch\(\(\) => \{\}\);/,
-  "the active video must request audible playback and fall back safely when the browser blocks it",
+  /const playSceneVideo = \(video\) => \{[\s\S]*?video\.muted = !isSoundAudible\(\);[\s\S]*?video\.play\(\)\.then\([\s\S]*?\.catch\(\(\) => \{[\s\S]*?video\.muted = true;[\s\S]*?video\.play\(\)\.catch\(\(\) => \{[\s\S]*?showSecondScreenRetry\(\);/,
+  "the active video must request audible playback, fall back to muted playback, and expose recovery when both attempts fail",
 );
 assert.match(
   formal,
-  /else \{\s*video\.pause\(\);\s*video\.muted = true;\s*\}/,
+  /else \{\s*video\.pause\(\);\s*video\.muted = true;\s*if \(video === secondScreenVideo\) clearSecondScreenPlaybackWatchdog\(\);\s*\}/,
   "a film that leaves the active screen must pause and become silent",
 );
-assert.doesNotMatch(
+assert.match(
   formal,
-  /secondScreenVideo\.currentTime\s*=\s*0/,
-  "returning to the second screen must continue from the paused position",
+  /if \(video === secondScreenVideo && video\.ended\) video\.currentTime = 0;/,
+  "returning to a completed second-screen film must replay it from the beginning",
 );
 assert.doesNotMatch(
   secondScene,
@@ -118,11 +118,11 @@ const secondAudio = secondProbe.streams.find(
   (stream) => stream.codec_type === "audio",
 );
 assert.equal(secondVideo?.codec_name, "h264", "the second-screen film must use H.264");
-assert.equal(secondVideo?.width, 3840, "the supplied 4K width must be preserved");
-assert.equal(secondVideo?.height, 2160, "the supplied 4K height must be preserved");
+assert.equal(secondVideo?.width, 1920, "the compatibility film must use 1080p width");
+assert.equal(secondVideo?.height, 1080, "the compatibility film must use 1080p height");
 assert.equal(secondVideo?.pix_fmt, "yuv420p", "the film must remain broadly browser-compatible");
 assert.equal(secondVideo?.r_frame_rate, "24/1", "the supplied 24 fps motion must be preserved");
-assert.ok(Number(secondVideo?.bit_rate) >= 8_000_000, "the second-screen film must retain a clear 4K bitrate");
+assert.ok(Number(secondVideo?.bit_rate) >= 4_000_000, "the 1080p film must retain a clear presentation bitrate");
 assert.equal(
   secondAudio?.codec_name,
   "aac",
@@ -131,7 +131,7 @@ assert.equal(
 assert.equal(secondAudio?.sample_rate, "48000", "the supplied 48 kHz audio must be preserved");
 assert.equal(secondAudio?.channels, 2, "the supplied stereo audio must be preserved");
 assert.ok(
-  Number(secondAudio?.bit_rate) >= 192_000,
+  Number(secondAudio?.bit_rate) >= 160_000,
   "the sound-effect track must retain high-quality audio bitrate",
 );
 assert.ok(

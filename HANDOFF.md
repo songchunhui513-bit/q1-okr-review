@@ -100,7 +100,10 @@ python3 -m http.server 4180 --bind 127.0.0.1
 
 - 登录页同时预加载开场和第二屏视频，并展示真实成功/失败进度；历史 session 不再绕过手动登录。
 - 点击 Sign In 时在用户手势内申请开场有声播放，认证失败会停止并复位视频。
-- 登录后按固定顺序、单文件串行预热 8 个 O1 TVC；节省流量模式和 2G 网络自动跳过，退出时可中止。
+- 第二屏从 GitHub Release 跨域 4K 源切换为同源 1080p H.264 High@L4.1/AAC 兼容源；5.59 MB 文件随正式构建发布，并使用 `video/mp4`、Range 请求和版本化长期缓存。
+- 首两屏预载增加 12 秒超时、一次自动重试、`stalled`/`abort`/`error` 处理；第二屏最终失败时显示“重试播放”，网络恢复后可通过用户手势重新拉取。
+- 媒体清单缺失时统一回退到根绝对同源路径，避免在 `/previews/` 下形成 `/previews/previews/...`。
+- 登录后按固定顺序、单文件串行预热 8 个 O1 TVC；嵌入模式先等待开场和第二屏均就绪，120 秒后才允许兜底启动，节省流量模式和 2G 网络仍自动跳过。
 - 生产构建会复制完整 `previews/ai-data-products/` 模块。
 - 媒体清单解析会忽略 URL 查询参数，带缓存版本的本地路径仍能命中 CDN manifest。
 
@@ -203,7 +206,8 @@ AI 模块通过同源 iframe 隔离，不增加或改写 Full Report 的 95 页�
 - O1 大图只在当前页及相邻页保留 `src`，离开较远页面后释放；
 - 登录页只预加载开场和第二屏视频，且不在登录遮罩后静默播放；
 - 片尾视频进入片尾时才加载；
-- 登录成功 6 秒后串行预热 8 个 O1 TVC，不会并行抢占开场和第二屏带宽；
+- 嵌入报告通过父子页面握手等待开场和第二屏就绪后，才串行预热 8 个 O1 TVC；120 秒仅作为异常兜底；
+- 第二屏使用随构建发布的同源 1080p 兼容视频，并具备超时、自动重试和用户手势恢复；
 - O1 初始解码图片由约 299.5 MiB 降到 15.8 MiB；
 - O1 第 26 页激活时，O1 解码图片约 36.5 MiB。
 
@@ -213,7 +217,7 @@ AI 模块通过同源 iframe 隔离，不增加或改写 Full Report 的 95 页�
 node tests/check-h1-media-memory-budget-runtime.mjs
 ```
 
-修改媒体加载策略后必须同时验证开场、第二屏有声播放、片尾、O1 首张内容页和 O1 第 26 张内容页。不要把 O1 图片重新改回全量 `loading="eager"`，也不要让三个 4K 视频同时使用 `preload="auto"`。
+修改媒体加载策略后必须同时验证开场、第二屏有声播放、第二屏请求失败后的自动/手动恢复、片尾、O1 首张内容页和 O1 第 26 张内容页。不要把 O1 图片重新改回全量 `loading="eager"`，也不要让多个大视频同时使用 `preload="auto"`。
 
 线上部署时继续保持“关键资源先行、图片窗口化、视频分阶段加载”。生产 CDN 必须支持 MP4 Range 请求、正确的 `video/mp4` MIME 和版本化长期缓存。当前片尾 4K 文件约 82 MB，尚无 poster；弱网首次进入片尾可能短暂等待首帧。正式上线前建议补片尾 poster，并在进入 Executive Snapshot 时开始预热片尾视频，而不是在登录页加载全部 4K 媒体。
 
@@ -277,15 +281,15 @@ previews/assets/o1-complete/tvc-library/
 
 ## 视频资源交付
 
-GitHub 只通过 Git LFS 保存沉浸式壳的 3 个主视频：
+GitHub 通过 Git LFS 保存沉浸式壳的关键本地视频：
 
 ```text
 previews/assets/vantage-h1-opening-final-4k.mp4
-previews/assets/vantage-h1-second-screen-july28-sound-4k.mp4
+previews/assets/vantage-h1-second-screen-final-1080p.mp4
 previews/assets/vantage-h1-closing-sp-4k.mp4
 ```
 
-O1 的 `tvc-library/*.mp4` 默认受 `.gitignore` 排除。新协作者若要完整本地播放，需要从项目共享素材包取得该目录，并保持文件名和相对路径不变。生产环境建议通过被忽略的 `config/video-manifest.json` 将相对路径映射到 CDN，例如：
+第二屏兼容文件必须同时保留在 `.gitignore`、`.vercelignore` 的例外列表和 `.gitattributes` LFS 规则中；生产构建显式复制该文件。O1 的 `tvc-library/*.mp4` 默认受 `.gitignore` 排除。新协作者若要完整本地播放，需要从项目共享素材包取得该目录，并保持文件名和相对路径不变。生产环境通过 `config/video-manifest.json` 将大型视频映射到公开媒体源；该清单可以提交公开 URL，但不得包含签名参数或凭据，例如：
 
 ```json
 {
@@ -295,7 +299,7 @@ O1 的 `tvc-library/*.mp4` 默认受 `.gitignore` 排除。新协作者若要完
 }
 ```
 
-Manifest 的 key 不带查询参数；运行时会自动去掉 `?v=...` 后匹配。不要把真实 CDN 地址、签名参数或内部凭据提交到仓库。生产 CDN 必须支持 Range 请求并返回正确的 `video/mp4` MIME。
+Manifest 的 key 不带查询参数；运行时会自动去掉 `?v=...` 后匹配。未映射条目会回退为根绝对同源 URL。生产 CDN 必须支持 Range 请求并返回正确的 `video/mp4` MIME。
 
 ## 文件职责
 
@@ -311,7 +315,9 @@ Manifest 的 key 不带查询参数；运行时会自动去掉 `?v=...` 后匹�
 | `previews/h1-o3-theme.css` | O3 样式。 |
 | `previews/assets/o1-complete/` | 本轮完整 O1 的隔离图片资源。 |
 | `previews/assets/o1-complete/tvc-library/` | O1 实际播放视频；本地素材，不随普通 Git 提交分发。 |
-| `config/video-manifest.json` | 可选的生产 CDN 映射；被 Git 忽略，不得包含密钥。 |
+| `config/video-manifest.json` | 公开的生产媒体映射；同源关键资源和远端大视频均在此登记，不得包含密钥。 |
+| `tests/check-h1-second-screen-resilient-delivery.mjs` | 第二屏同源构建、缓存、根路径、重试与预热握手静态契约。 |
+| `tests/check-h1-second-screen-resilience-runtime.mjs` | 配置缺失、首次请求失败和手动恢复的浏览器回归。 |
 | `tests/check-h1-o2-seo-technical-ppt.mjs` | O2 SEO 技术页文案、结构、品牌图和 PPT 几何契约。 |
 | `tests/check-h1-o2-aso-ppt-restoration.mjs` | O2 ASO 18–19 页 PPT 构图和正文可编辑契约。 |
 | `tests/check-h1-o2-editor-layout-regression.mjs` | O2 第 21/25 页编辑器文本槽与布局回归契约。 |
@@ -345,6 +351,8 @@ node tests/check-h1-objective-chapters.mjs
 node tests/check-h1-objective-chapters-runtime.mjs
 H1_OKR_TEST_URL=http://127.0.0.1:4180 node tests/check-h1-okr-shell-paging-runtime.mjs
 node tests/check-h1-media-memory-budget-runtime.mjs
+node tests/check-h1-second-screen-resilient-delivery.mjs
+H1_VIDEO_TEST_URL=http://127.0.0.1:4180 npm run test:second-screen-runtime
 node tests/check-h1-okr-tvc-video-playback.mjs
 node tests/check-h1-o2-seo-technical-ppt.mjs
 node tests/check-h1-o2-aso-ppt-restoration.mjs
@@ -467,6 +475,8 @@ tar -xzf backups/confirmed-scope-before-20260730-184516.tar.gz \
 - AI 数据产品仍是独立外层场景，不属于 Full Report 页数。
 - 登录页必须保留手动登录；不要恢复用历史 session 自动跳过登录遮罩的逻辑。
 - 预热队列必须保持串行，并继续尊重 `saveData`、`slow-2g` 和 `2g`；`public-good.mp4` 体积最大，应放在队列最后。
+- 嵌入报告的 O1 预热必须等待 `vantage-primary-videos-ready`；不要恢复登录后固定 6 秒启动，以免弱网下与第二屏竞争。
+- 第二屏兼容视频必须保持同源、H.264 High@L4.1、AAC、`yuv420p` 和 faststart；替换文件时同步更新 manifest 字节数、LFS/构建规则和两项专项测试。
 - O2 SEO 技术页的 PPT 文案、品牌 logo、截图裁切和指标网格由专项测试保护，修改前先确认原稿。
 - O2 可编辑页面不能随意改变文本节点的数量或顺序。确需调整 DOM 时，必须同步设计 Supabase 历史内容迁移，不能只改 JSX/CSS。
 - 每次 Vercel 生产发布后都要显式核对 `vantage-h1.vercel.app`，因为项目默认别名可能仍只更新 review 域名。

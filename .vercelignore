@@ -1,5 +1,5 @@
-# Production media is delivered through the public remote-media manifest.
-# The remote build receives only source files and regenerates the dist artifact.
+# Most production media is delivered through the public remote-media manifest.
+# The opening and second-screen critical files are explicit build inputs.
 .git/
 .vercel/
 dist/
@@ -15,6 +15,7 @@ node_modules/
 previews/assets/ppt-originals/
 **/*.mp4
 !previews/assets/vantage-h1-opening-final-4k.mp4
+!previews/assets/vantage-h1-second-screen-final-1080p.mp4
 debug-*.png
 verify-*.png
 check-*.png

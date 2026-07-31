@@ -5999,7 +5999,22 @@ function App(){
   useEffect(()=>{
     if(!authed)return;
     const controller=new AbortController();
+    let warmupStarted=false;
+    const requestPrimaryVideosReady=()=>{
+      if(!EMBEDDED_REPORT_MODE)return;
+      window.parent.postMessage({type:'vantage-primary-media-state-request'},location.origin);
+    };
+    const onPrimaryVideosReady=event=>{
+      if(
+        event.origin!==location.origin||
+        event.source!==window.parent||
+        event.data?.type!=='vantage-primary-videos-ready'
+      )return;
+      startWarmup();
+    };
     const startWarmup=()=>{
+      if(warmupStarted)return;
+      warmupStarted=true;
       window.VantageBrowserRuntime
         .progressivelyWarmPresentationMedia({
           paths:O1_TVC_PRELOAD_PATHS,
@@ -6012,9 +6027,15 @@ function App(){
           if(error?.name!=='AbortError')console.warn('Progressive video warm-up failed',error);
         });
     };
-    const timer=window.setTimeout(startWarmup,6000);
+    window.addEventListener('message',onPrimaryVideosReady);
+    requestPrimaryVideosReady();
+    const timer=window.setTimeout(
+      startWarmup,
+      EMBEDDED_REPORT_MODE?120000:6000,
+    );
     return()=>{
       window.clearTimeout(timer);
+      window.removeEventListener('message',onPrimaryVideosReady);
       controller.abort();
     };
   },[authed]);

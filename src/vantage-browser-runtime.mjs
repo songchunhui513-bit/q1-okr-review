@@ -285,7 +285,7 @@ export function resolveMediaUrl(
   const manifestPath = normalizedPath.split(/[?#]/, 1)[0];
   const entry = manifest[manifestPath];
   if (typeof entry === "string") return entry;
-  return entry?.url || path;
+  return entry?.url || `/${normalizedPath}`;
 }
 
 export function listPresentationMedia() {

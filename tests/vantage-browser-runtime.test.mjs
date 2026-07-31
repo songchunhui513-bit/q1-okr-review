@@ -155,8 +155,8 @@ assert.equal(
 );
 assert.equal(
   resolveMediaUrl("previews/assets/missing.mp4"),
-  "previews/assets/missing.mp4",
-  "local development must keep an unmapped media path unchanged",
+  "/previews/assets/missing.mp4",
+  "an unmapped media path must fall back to a root-absolute same-origin URL",
 );
 
 assert.deepEqual(listPresentationMedia(), [

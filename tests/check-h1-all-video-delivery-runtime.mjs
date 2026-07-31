@@ -11,7 +11,7 @@ const resolutionHostname =
   process.env.H1_VIDEO_RESOLUTION_HOSTNAME || new URL(baseUrl).hostname;
 const activeVideoPaths = [
   "previews/assets/vantage-h1-opening-final-4k.mp4",
-  "previews/assets/vantage-h1-second-screen-final-4k.mp4",
+  "previews/assets/vantage-h1-second-screen-final-1080p.mp4",
   "previews/assets/vantage-h1-closing-ending-4k.mp4",
   "previews/assets/o1-complete/tvc-library/brand-chapter-perform-ahead.mp4",
   "previews/assets/o1-complete/tvc-library/brand-chapter-think-ahead.mp4",
@@ -121,11 +121,14 @@ try {
   } else {
     assert.ok(
       results.every((result) =>
-        result.resolved.includes(
-          "github.com/songchunhui513-bit/q1-okr-review/releases/download/",
-        ),
+        result.path === "previews/assets/vantage-h1-second-screen-final-1080p.mp4"
+          ? result.resolved ===
+            "/previews/assets/vantage-h1-second-screen-final-1080p.mp4"
+          : result.resolved.includes(
+              "github.com/songchunhui513-bit/q1-okr-review/releases/download/",
+            ),
       ),
-      "production must resolve every presentation video through a public GitHub media release",
+      "production must keep the second screen same-origin and resolve the remaining large videos through the media release",
     );
   }
 } finally {

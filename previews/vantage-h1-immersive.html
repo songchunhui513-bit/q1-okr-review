@@ -677,6 +677,31 @@
         linear-gradient(90deg, rgba(2,2,2,.12), transparent 20%, transparent 80%, rgba(2,2,2,.12));
     }
     .second-film::before { opacity: .12; }
+    .second-screen-retry {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(72px, 10vh, 116px);
+      z-index: 8;
+      min-width: 132px;
+      padding: 12px 20px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255,148,111,.62);
+      border-radius: 999px;
+      background: rgba(24,7,6,.82);
+      color: #fff7f2;
+      font: 600 13px/1 "Noto Sans SC", sans-serif;
+      letter-spacing: .08em;
+      cursor: pointer;
+      box-shadow: 0 10px 34px rgba(0,0,0,.46), 0 0 22px rgba(232,88,90,.2);
+      backdrop-filter: blur(12px);
+    }
+    .second-screen-retry:hover,
+    .second-screen-retry:focus-visible {
+      background: rgba(166,36,31,.9);
+      outline: 2px solid rgba(255,183,154,.72);
+      outline-offset: 3px;
+    }
+    .second-screen-retry[hidden] { display: none; }
 
     .report-scene { background: #030303; }
     .report-scene::before { opacity: .2; }
@@ -942,7 +967,8 @@
     </section>
 
     <section class="scene scene-video hero-visual second-film" data-label="H1 Review" aria-label="第二屏视频">
-          <video id="secondScreenVideo" class="video-bg second-screen-video" muted playsinline preload="metadata" poster="assets/vantage-h1-second-screen-final-poster.jpg" data-src="previews/assets/vantage-h1-second-screen-final-4k.mp4"></video>
+      <video id="secondScreenVideo" class="video-bg second-screen-video" muted playsinline preload="metadata" poster="assets/vantage-h1-second-screen-final-poster.jpg" data-src="/previews/assets/vantage-h1-second-screen-final-1080p.mp4"></video>
+      <button class="second-screen-retry" id="secondScreenRetry" type="button" hidden>重试播放</button>
       <div class="chapter-no">02 <small>/ 06</small></div>
     </section>
 
@@ -1108,6 +1134,7 @@
     const loginPreloadProgressFill = document.getElementById('loginPreloadProgressFill');
     const openingVideo = document.getElementById('openingVideo');
     const secondScreenVideo = document.getElementById('secondScreenVideo');
+    const secondScreenRetry = document.getElementById('secondScreenRetry');
     const reportFrame = document.getElementById('reportFrame');
     const closingScene = document.querySelector('.closing');
     const closingVideo = closingScene.querySelector('video');
@@ -1133,6 +1160,17 @@
     const loginPreloadStates = new Map(
       LOGIN_PRELOAD_TARGETS.map(({video}) => [video, 'pending']),
     );
+    const LOGIN_VIDEO_LOAD_TIMEOUT_MS = 12000;
+    const LOGIN_VIDEO_MAX_ATTEMPTS = 2;
+    const SECOND_SCREEN_STALL_TIMEOUT_MS = 8000;
+    const loginVideoLoadAttempts = new Map(
+      LOGIN_PRELOAD_TARGETS.map(({video}) => [video, 0]),
+    );
+    let primaryVideosReady = false;
+    let secondScreenPlaybackWatchdog = 0;
+    let secondScreenRecoveryInFlight = false;
+    let secondScreenAutomaticRecoveryAttempts = 0;
+    let cleanupSecondScreenRecoveryAttempt = () => {};
 
     const ensureAiProductsFrameSource = () => {
       if (aiProductsFrame.getAttribute('src') || !aiProductsFrame.dataset.src) return;
@@ -1201,6 +1239,22 @@
       editorSaveButton.disabled = busy || !dirty;
     };
 
+    const notifyReportPrimaryVideosReady = () => {
+      if (!primaryVideosReady) return;
+      reportFrame.contentWindow?.postMessage(
+        {type:'vantage-primary-videos-ready'},
+        location.origin,
+      );
+    };
+
+    const showSecondScreenRetry = () => {
+      secondScreenRetry.hidden = false;
+    };
+
+    const hideSecondScreenRetry = () => {
+      secondScreenRetry.hidden = true;
+    };
+
     const updateLoginPreloadState = () => {
       const totalCount = LOGIN_PRELOAD_TARGETS.length;
       const states = [...loginPreloadStates.values()];
@@ -1224,24 +1278,97 @@
       } else {
         loginPreloadStatus.textContent = `首两屏视频已就绪 ${readyCount}/${totalCount}`;
       }
+      primaryVideosReady = readyCount === totalCount;
+      if (primaryVideosReady) notifyReportPrimaryVideosReady();
     };
 
     const preloadLoginVideos = () => {
-      LOGIN_PRELOAD_TARGETS.forEach(({video}) => {
-        const settle = state => {
-          if (loginPreloadStates.get(video) !== 'pending') return;
-          loginPreloadStates.set(video, state);
+      LOGIN_PRELOAD_TARGETS.forEach(({video,label}) => {
+        let cleanupAttempt = () => {};
+
+        const markReady = () => {
+          cleanupAttempt();
+          loginPreloadStates.set(video, 'ready');
+          if (video === secondScreenVideo) {
+            hideSecondScreenRetry();
+            if (
+              authUnlocked &&
+              scenes[activeIndex]?.contains(video) &&
+              video.paused &&
+              !video.ended
+            ) window.setTimeout(() => playSceneVideo(video), 0);
+          }
           updateLoginPreloadState();
         };
-        video.addEventListener('canplay', () => settle('ready'), {once:true});
-        video.addEventListener('error', () => settle('failed'), {once:true});
-        video.preload = 'auto';
-        if (!video.getAttribute('src') && video.dataset.src) {
-          video.src = window.VantageBrowserRuntime.resolveMediaUrl(video.dataset.src);
-        }
-        video.load();
-        if (video.error) settle('failed');
-        else if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) settle('ready');
+
+        const attemptLoad = () => {
+          cleanupAttempt();
+          const attempt = (loginVideoLoadAttempts.get(video) || 0) + 1;
+          loginVideoLoadAttempts.set(video, attempt);
+          loginPreloadStates.set(video, 'pending');
+          updateLoginPreloadState();
+
+          let settled = false;
+          let timeoutId = 0;
+          let lastLoadSignal = 'timeout';
+          const failAttempt = reason => {
+            if (settled) return;
+            settled = true;
+            cleanupAttempt();
+            retryLoginVideoLoad(reason);
+          };
+          const onCanPlay = () => {
+            if (settled) return;
+            settled = true;
+            markReady();
+          };
+          const onError = () => failAttempt(`media error ${video.error?.code || 'unknown'}`);
+          const onStalled = () => { lastLoadSignal = 'stalled'; };
+          const onAbort = () => { lastLoadSignal = 'aborted'; };
+          cleanupAttempt = () => {
+            window.clearTimeout(timeoutId);
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('error', onError);
+            video.removeEventListener('stalled', onStalled);
+            video.removeEventListener('abort', onAbort);
+          };
+
+          video.addEventListener('canplay', onCanPlay);
+          video.addEventListener('error', onError);
+          video.addEventListener('stalled', onStalled);
+          video.addEventListener('abort', onAbort);
+          timeoutId = window.setTimeout(
+            () => failAttempt(lastLoadSignal),
+            LOGIN_VIDEO_LOAD_TIMEOUT_MS,
+          );
+          video.preload = 'auto';
+          if (!video.getAttribute('src') && video.dataset.src) {
+            video.src = window.VantageBrowserRuntime.resolveMediaUrl(video.dataset.src);
+          } else if (attempt > 1) {
+            const source = video.src;
+            video.removeAttribute('src');
+            video.load();
+            video.src = source;
+          }
+          video.load();
+          if (video.error) failAttempt(`media error ${video.error.code}`);
+          else if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
+        };
+
+        const retryLoginVideoLoad = reason => {
+          const attempts = loginVideoLoadAttempts.get(video) || 0;
+          if (attempts < LOGIN_VIDEO_MAX_ATTEMPTS) {
+            console.warn(`${label}预加载失败，正在重试 (${attempts}/${LOGIN_VIDEO_MAX_ATTEMPTS})`, reason);
+            window.setTimeout(attemptLoad, 450);
+            return;
+          }
+          console.error(`${label}预加载失败`, reason);
+          loginPreloadStates.set(video, 'failed');
+          if (video === secondScreenVideo) showSecondScreenRetry();
+          updateLoginPreloadState();
+        };
+
+        attemptLoad();
       });
       updateLoginPreloadState();
     };
@@ -1278,6 +1405,7 @@
         {type:'vantage-authenticated'},
         location.origin,
       );
+      notifyReportPrimaryVideosReady();
     };
 
     const submitLogin = async () => {
@@ -1320,6 +1448,140 @@
     });
 
     const isSoundAudible = () => soundOn && !soundBlocked;
+    const clearSecondScreenPlaybackWatchdog = () => {
+      window.clearTimeout(secondScreenPlaybackWatchdog);
+      secondScreenPlaybackWatchdog = 0;
+    };
+    const failSecondScreenRecovery = reason => {
+      cleanupSecondScreenRecoveryAttempt();
+      clearSecondScreenPlaybackWatchdog();
+      secondScreenRecoveryInFlight = false;
+      loginPreloadStates.set(secondScreenVideo, 'failed');
+      updateLoginPreloadState();
+      showSecondScreenRetry();
+      console.error('第二屏视频恢复失败', reason);
+    };
+    const loadAndPlaySecondScreen = () => {
+      if (secondScreenRecoveryInFlight) return;
+      cleanupSecondScreenRecoveryAttempt();
+      clearSecondScreenPlaybackWatchdog();
+      secondScreenRecoveryInFlight = true;
+      hideSecondScreenRetry();
+      loginPreloadStates.set(secondScreenVideo, 'pending');
+      updateLoginPreloadState();
+
+      let settled = false;
+      let timeoutId = 0;
+      let lastLoadSignal = 'timeout';
+      const failAttempt = reason => {
+        if (settled) return;
+        settled = true;
+        failSecondScreenRecovery(reason);
+      };
+      const onError = () =>
+        failAttempt(`media error ${secondScreenVideo.error?.code || 'unknown'}`);
+      const onStalled = () => { lastLoadSignal = 'stalled'; };
+      const onAbort = () => { lastLoadSignal = 'aborted'; };
+      cleanupSecondScreenRecoveryAttempt = () => {
+        window.clearTimeout(timeoutId);
+        secondScreenVideo.removeEventListener('error', onError);
+        secondScreenVideo.removeEventListener('stalled', onStalled);
+        secondScreenVideo.removeEventListener('abort', onAbort);
+        cleanupSecondScreenRecoveryAttempt = () => {};
+      };
+      secondScreenVideo.addEventListener('error', onError);
+      secondScreenVideo.addEventListener('stalled', onStalled);
+      secondScreenVideo.addEventListener('abort', onAbort);
+      timeoutId = window.setTimeout(
+        () => failAttempt(lastLoadSignal),
+        LOGIN_VIDEO_LOAD_TIMEOUT_MS,
+      );
+
+      const source = window.VantageBrowserRuntime.resolveMediaUrl(
+        secondScreenVideo.dataset.src,
+      );
+      secondScreenVideo.removeAttribute('src');
+      secondScreenVideo.load();
+      secondScreenVideo.src = source;
+      secondScreenVideo.preload = 'auto';
+      secondScreenVideo.muted = !isSoundAudible();
+      secondScreenVideo.volume = 1;
+      secondScreenVideo.load();
+      const playback = secondScreenVideo.play();
+      playback?.catch(() => {
+        if (settled) return;
+        secondScreenVideo.muted = true;
+        secondScreenVideo.play().catch(error => failAttempt(error?.message || 'playback rejected'));
+      });
+    };
+    const armSecondScreenPlaybackWatchdog = reason => {
+      if (
+        !authUnlocked ||
+        !scenes[activeIndex]?.contains(secondScreenVideo) ||
+        secondScreenVideo.ended ||
+        secondScreenRecoveryInFlight
+      ) return;
+      clearSecondScreenPlaybackWatchdog();
+      secondScreenPlaybackWatchdog = window.setTimeout(() => {
+        if (
+          !scenes[activeIndex]?.contains(secondScreenVideo) ||
+          secondScreenVideo.ended
+        ) return;
+        if (secondScreenAutomaticRecoveryAttempts >= 1) {
+          failSecondScreenRecovery(reason);
+          return;
+        }
+        secondScreenAutomaticRecoveryAttempts += 1;
+        loadAndPlaySecondScreen();
+      }, SECOND_SCREEN_STALL_TIMEOUT_MS);
+    };
+
+    secondScreenRetry.addEventListener('click', () => {
+      secondScreenAutomaticRecoveryAttempts = 0;
+      loadAndPlaySecondScreen();
+    });
+    secondScreenVideo.addEventListener('playing', () => {
+      cleanupSecondScreenRecoveryAttempt();
+      clearSecondScreenPlaybackWatchdog();
+      secondScreenRecoveryInFlight = false;
+      secondScreenAutomaticRecoveryAttempts = 0;
+      hideSecondScreenRetry();
+      loginPreloadStates.set(secondScreenVideo, 'ready');
+      updateLoginPreloadState();
+    });
+    secondScreenVideo.addEventListener(
+      'waiting',
+      () => armSecondScreenPlaybackWatchdog('waiting'),
+    );
+    secondScreenVideo.addEventListener(
+      'stalled',
+      () => armSecondScreenPlaybackWatchdog('stalled'),
+    );
+    secondScreenVideo.addEventListener(
+      'abort',
+      () => armSecondScreenPlaybackWatchdog('aborted'),
+    );
+    secondScreenVideo.addEventListener('ended', clearSecondScreenPlaybackWatchdog);
+    secondScreenVideo.addEventListener('error', () => {
+      if (
+        secondScreenRecoveryInFlight ||
+        (!authUnlocked &&
+          loginPreloadStates.get(secondScreenVideo) !== 'failed')
+      ) return;
+      if (
+        authUnlocked &&
+        scenes[activeIndex]?.contains(secondScreenVideo) &&
+        secondScreenAutomaticRecoveryAttempts < 1
+      ) {
+        secondScreenAutomaticRecoveryAttempts += 1;
+        loadAndPlaySecondScreen();
+        return;
+      }
+      failSecondScreenRecovery(
+        `media error ${secondScreenVideo.error?.code || 'unknown'}`,
+      );
+    });
+
     const applySoundState = () => {
       const audible = isSoundAudible();
       videos.forEach(video => {
@@ -1345,7 +1607,7 @@
         return;
       }
       if (video === openingVideo && openingPlaybackCompleted) return;
-      if (video === secondScreenVideo && video.ended) return;
+      if (video === secondScreenVideo && video.ended) video.currentTime = 0;
       ensureVideoSource(video);
       video.muted = !isSoundAudible();
       video.volume = 1;
@@ -1361,7 +1623,9 @@
           applySoundState();
         }
         video.muted = true;
-        video.play().catch(() => {});
+        video.play().catch(() => {
+          if (video === secondScreenVideo) showSecondScreenRetry();
+        });
       });
     };
 
@@ -1447,6 +1711,7 @@
         } else {
           video.pause();
           video.muted = true;
+          if (video === secondScreenVideo) clearSecondScreenPlaybackWatchdog();
         }
       });
     }
@@ -1915,13 +2180,20 @@
       publishReportState(nearestReportIndex());
     }
 
-    reportFrame.addEventListener('load', prepareEmbeddedReport);
+    reportFrame.addEventListener('load', () => {
+      prepareEmbeddedReport();
+      notifyReportPrimaryVideosReady();
+    });
     if (reportFrame.contentDocument?.readyState === 'complete') prepareEmbeddedReport();
     window.addEventListener('message', event => {
       if (
         event.origin !== location.origin ||
         event.source !== reportFrame.contentWindow
       ) return;
+      if (event.data?.type === 'vantage-primary-media-state-request') {
+        notifyReportPrimaryVideosReady();
+        return;
+      }
       if (event.data?.type === 'vantage-editor-state') {
         reportEditorState = {
           ...reportEditorState,

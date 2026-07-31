@@ -44,7 +44,13 @@ assert.equal(
 
 assert.ok(
   buildScript.includes('extension === ".mp4"'),
-  "the production artifact must exclude every local MP4",
+  "the production artifact must exclude non-critical local MP4 files",
+);
+assert.ok(
+  buildScript.includes(
+    'copyPublicFile("previews/assets/vantage-h1-second-screen-final-1080p.mp4")',
+  ),
+  "the production artifact must explicitly include the second-screen compatibility video",
 );
 assert.ok(
   buildScript.includes('"previews/assets"'),
