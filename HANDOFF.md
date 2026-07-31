@@ -34,8 +34,8 @@ vantage-h1.vercel.app 的部署状态为 READY
 
 ```text
 Production URL: https://vantage-h1.vercel.app/
-Deployment ID: dpl_9kqSHzWF4ftQKhHGAS6QT86DR3xH
-Source commit: 1370aefd4a9b30298da5966bad258a1dae35fe28
+Deployment ID: dpl_83zAveQmmCoMpUoAbmaUR1Fyo3Qm
+Source commit: af5985b67d6d65f1fbc4dba53ddb5e10ef3afec7
 Status: READY
 ```
 
